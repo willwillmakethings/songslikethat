@@ -13,27 +13,21 @@
     <header>
         <div class="header-inner">
             <h1>songslike.that</h1>
-            <p>For when you liked a song and thought:<br><i>"I want more songs like that!"</i></p>
+            <p>For when you heard a song and thought: <i>"I want more songs like that!"</i></p>
+            <div class="search">
+                <input id="search-input" placeholder="Search by song name" type="search" autocomplete="off">
+                <button id="search-btn">Search</button>
+            </div>
         </div>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 31">
-            <path fill="var(--grey-500)" fill-opacity="1" d="M1440,31l-120-5.3c-120-5.7-360-15.7-600-16-240,.3-480,10.3-600,16L0,31V0h1440v31Z"/>
+            <path fill="var(--main-500)" fill-opacity="1"
+                d="M1440,31l-120-5.3c-120-5.7-360-15.7-600-16-240,.3-480,10.3-600,16L0,31V0h1440v31Z" />
         </svg>
     </header>
     <main>
-        <p>Enter a song name and get songs similar to it.</p>
-        <div class="search">
-            <input placeholder="Search by song name">
-            <button>Search</button>
-        </div>
+        <!-- <span id="echo">Songs like <b id="name">song</b> - <b id="artist">artist</b></span> -->
     </main>
-    <footer>
-        <p>Made by Will</p>
-        <select>
-            <option value="S">System Theme</option>
-            <option value="D">Dark Theme</option>
-            <option value="L">Light Theme</option>
-        </select>
-    </footer>
 </body>
 
 </html>
+<script src="search.js"></script>
