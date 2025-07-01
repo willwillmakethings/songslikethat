@@ -15,7 +15,8 @@
             <h1>songslike.that</h1>
             <p>For when you heard a song and thought: <i>"I want more songs like that!"</i></p>
             <div class="search">
-                <input id="search-input" placeholder="Type the song name, then select the song from the suggestions" type="search" autocomplete="off">
+                <input id="search-input" placeholder="Type the song name, then select the song from the suggestions"
+                    type="search" autocomplete="off">
                 <!-- <button id="search-btn">Search</button> -->
             </div>
             <div id="suggestions" class="songs-suggestions"></div>
@@ -26,7 +27,32 @@
         </svg>
     </header>
     <main>
-        <!-- <span id="echo">Songs like <b id="name">song</b> - <b id="artist">artist</b></span> -->
+        <section class="similar-songs">
+            <div class="list-header">
+                <span>Songs like <b id="echo-name">song</b> - <b id="echo-artist">artist</b></span>
+                <span>Sorted by
+                    <select>
+                        <option value="date">Date</option>
+                        <option value="streams">Streams</option>
+                    </select>
+                </span>
+            </div>
+            <div class="song-block">
+                <div class="song-info">
+                    <img src="/img/placeholder.jpg">
+                    <p>Song Name</p>
+                    <span>Artist</span>
+                </div>
+                <div class="song-links">
+                    <a title="Open in Apple Music"><img src="/img/apple-music.svg" alt=""></a>
+                    <a title="Open in Spotify"><img src="/img/spotify.svg" alt=""></a>
+                    <a title="Open in Amazon Music"><img src="/img/amazon-music.svg" alt=""></a>
+                </div>
+                <div class="song-playback">
+                    <p>Play</p>
+                </div>
+            </div>
+        </section>
     </main>
 </body>
 
