@@ -17,9 +17,8 @@
             <div class="search">
                 <input id="search-input" placeholder="Type the song name, then select the song from the suggestions"
                     type="search" autocomplete="off">
-                <!-- <button id="search-btn">Search</button> -->
             </div>
-            <div id="suggestions" class="songs-suggestions"></div>
+            <div id="suggestions" class="songs-suggestions hidden"></div>
         </div>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 31">
             <path fill="var(--main-300)" fill-opacity="1"
@@ -29,15 +28,59 @@
     <main>
         <section class="similar-songs">
             <div class="list-header">
-                <span>Songs like <b id="echo-name">song</b> - <b id="echo-artist">artist</b></span>
-                <span>Sorted by
-                    <select>
-                        <option value="date">Date</option>
-                        <option value="streams">Streams</option>
-                    </select>
-                </span>
+                <span>Songs like <b id="echo-name">song</b> by <b id="echo-artist">artist</b></span>
+                <button class="sort-toggle">
+                    <span id="sort-label">Display Settings</span>
+                    <img src="/img/sort-settings.svg" alt="" width="25px">
+                    <div class="sort-popup">
+                        <fieldset>
+                            <legend>Sorting</legend>
+                            <div class="option checked">
+                                <input type="radio" name="sorting" value="pop-high-low" id="pop-high-low" checked>
+                                <label for="pop-high-low">Popularity, High to Low</label>
+                            </div>
+                            <div class="option">
+                                <input type="radio" name="sorting" value="pop-low-high" id="pop-low-high">
+                                <label for="pop-low-high">Popularity, Low to High</label>
+                            </div>
+                            <div class="option">
+                                <input type="radio" name="sorting" value="date-new-old" id="date-new-old">
+                                <label for="date-new-old">Date, Newest to Oldest</label>
+                            </div>
+                            <div class="option">
+                                <input type="radio" name="sorting" value="date-old-new" id="date-old-new">
+                                <label for="date-old-new">Date, Oldest to Newest</label>
+                            </div>
+                        </fieldset>
+                        <fieldset>
+                            <legend>Songs per page</legend>
+                            <div class="row">
+                                <div class="option checked">
+                                    <input type="radio" name="view" value="10" id="10" checked>
+                                    <label for="10">10</label>
+                                </div>
+                                <div class="option">
+                                    <input type="radio" name="view" value="20" id="20">
+                                    <label for="20">20</label>
+                                </div>
+                                <div class="option">
+                                    <input type="radio" name="view" value="50" id="50">
+                                    <label for="50">50</label>
+                                </div>
+                                <div class="option">
+                                    <input type="radio" name="view" value="100" id="100">
+                                    <label for="100">100</label>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </div>
+                </button>
             </div>
-            <div class="song-block">
+            <div class="loader">
+
+            </div>
+            <!-- song-block will be added dynamically when i get the similar songs -->
+            <!-- <div class="song-block">
                 <div class="song-info">
                     <img src="/img/placeholder.jpg">
                     <p>Song Name</p>
@@ -49,9 +92,9 @@
                     <a title="Open in Amazon Music"><img src="/img/amazon-music.svg" alt=""></a>
                 </div>
                 <div class="song-playback">
-                    <p>Play</p>
+                    <button id="play-pause" class="play"><img src="/img/song-play.svg" alt="Play"></button>
                 </div>
-            </div>
+            </div> -->
         </section>
     </main>
 </body>

@@ -2,6 +2,7 @@
 *config.json
 *g_sheets_test_key.json
 .DS_Store
+keys.env
 
 # Logs
 logs
