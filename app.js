@@ -37,9 +37,8 @@ app.post('/searchSimilar/:title-:artist', (req, res) => {
 
     // get and send similar songs for input song
     async function getSimilar() {
-        let songId = (await fetchSpotifyApi(title, artist)).tracks.items[0].id;
-        // let results = (await findSimilarSongs(songId));
-        // console.log("results", results);
+        let results = (await findSimilarSongs(title, artist));
+        res.status(200).json({ status: "success", results: results});
     }
 })
 
@@ -83,6 +82,94 @@ async function fetchSpotifyApi(title, artist = "") {
     return songsList;
 }
 
+async function getRelatedArtists(artistName) {
+    const TASTEDIVE_API_KEY = process.env.TASTEDIVE_API_KEY
+    const query = encodeURIComponent(artistName);
+
+    const res = await fetch(
+        `https://tastedive.com/api/similar?q=${query}&type=music&info=0&limit=10&k=${TASTEDIVE_API_KEY}`
+    );
+
+    if (!res.ok) {
+        console.error("TasteDive API error:", await res.text());
+        return [];
+    }
+
+    const json = await res.json();
+    const results = json?.similar?.results || [];
+
+    // Extract just the artist names
+    const artistNames = results.map(entry => entry.name);
+    return artistNames;
+}
+
+async function findSimilarSongs(title, artist) {
+  let token = await getToken();
+  const headers = { Authorization: `Bearer ${token}` };
+
+  const relatedArtistNames = await getRelatedArtists(artist);
+  const allTracks = [];
+
+  for (const name of relatedArtistNames) {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // 1. Search for artist
+      const artistSearchUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(name)}&type=artist&limit=1`;
+      const artistData = await retryFetchJSON(artistSearchUrl, { headers });
+
+      const artistId = artistData?.artists?.items?.[0]?.id;
+      if (!artistId) continue;
+
+      // 2. Get top tracks
+      const topTracksUrl = `https://api.spotify.com/v1/artists/${artistId}/top-tracks?market=US`;
+      const topTrackData = await retryFetchJSON(topTracksUrl, { headers });
+      const topTracks = topTrackData.tracks || [];
+
+      // 3. Format and push
+      for (const track of topTracks.slice(0, 5)) {
+        allTracks.push({
+          id: track.id,
+          title: track.name,
+          artist: track.artists.map(a => a.name).join(', '),
+          albumImage: track.album.images?.[0]?.url || null,
+          spotifyUrl: track.external_urls.spotify,
+          appleMusicUrl: await getAppleMusicUrl(track.name, name),
+          amazonMusicUrl: `https://www.amazon.com/s?k=${encodeURIComponent(track.name + ' ' + name)}&i=digital-music`,
+          previewUrl: track.preview_url,
+          popularity: track.popularity,
+          release_date: track.album.release_date
+        });
+      }
+    } catch (err) {
+      console.warn(`Error fetching for "${name}":`, err.message);
+    }
+  }
+
+  return allTracks;
+}
+
+// helper functions
+async function retryFetchJSON(url, options = {}, maxRetries = 3, delay = 300) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const res = await fetch(url, options);
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status} ${res.statusText}`);
+      }
+
+      return await res.json();
+    } catch (err) {
+      if (attempt === maxRetries) {
+        throw new Error(`Failed after ${maxRetries} attempts: ${err.message}`);
+      }
+      console.warn(`Retrying (${attempt}/${maxRetries})... ${url}`);
+      await new Promise(resolve => setTimeout(resolve, delay * attempt)); // exponential backoff
+    }
+  }
+}
+
 async function getToken() {
     const CLIENT_SECRET = process.env.CLIENT_SECRET;
     const CLIENT_ID = process.env.CLIENT_ID;
@@ -99,6 +186,12 @@ async function getToken() {
 
     let token = (await tokenRes.json()).access_token;
     return token
+}
+
+async function getAppleMusicUrl(title, artist) {
+  const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(title + ' ' + artist)}&entity=song&limit=1`);
+  const data = await res.json();
+  return data.results?.[0]?.trackViewUrl || null;
 }
 
 function deDuplicate(songsList, maxLength) {
