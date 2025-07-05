@@ -31,15 +31,15 @@ app.post('/search', (req, res) => {
     }
 })
 
-app.post('/searchSimilar', (req, res) => {
-    var { title, artist } = req.body;
+app.post('/searchSimilar/:title-:artist', (req, res) => {
+    var { title, artist } = req.params;
     getSimilar();
 
     // get and send similar songs for input song
     async function getSimilar() {
         let songId = (await fetchSpotifyApi(title, artist)).tracks.items[0].id;
-        let results = (await findSimilarSongs(songId));
-        console.log("results", results);
+        // let results = (await findSimilarSongs(songId));
+        // console.log("results", results);
     }
 })
 

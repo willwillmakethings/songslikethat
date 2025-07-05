@@ -6,13 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/style.css" type="text/css">
     <link rel="stylesheet" href="https://use.typekit.net/jqe1gld.css">
-    <title>songslike.that</title>
+    <title>songslikethat</title>
 </head>
 
 <body>
     <header>
         <div class="header-inner">
-            <h1>songslike.that</h1>
+            <h1>songslikethat</h1>
             <p>For when you heard a song and thought: <i>"I want more songs like that!"</i></p>
             <div class="search">
                 <input id="search-input" placeholder="Type the song name, then select the song from the suggestions"
@@ -26,7 +26,7 @@
         </svg>
     </header>
     <main>
-        <section class="similar-songs">
+        <section class="similar-songs hidden">
             <div class="list-header">
                 <span>Songs like <b id="echo-name">song</b> by <b id="echo-artist">artist</b></span>
                 <button class="sort-toggle">
@@ -35,8 +35,10 @@
                     <div class="sort-popup">
                         <fieldset>
                             <legend>Sorting</legend>
+                            <!-- TODO: turn each div/input/label combo into a button -->
+                            <!-- <button class="option checked" name="sorting" id="pop-low-high">Popularity, High to Low</button> -->
                             <div class="option checked">
-                                <input type="radio" name="sorting" value="pop-high-low" id="pop-high-low" checked>
+                                <input type="radio" name="sorting" value="pop-high-low" id="pop-high-low">
                                 <label for="pop-high-low">Popularity, High to Low</label>
                             </div>
                             <div class="option">

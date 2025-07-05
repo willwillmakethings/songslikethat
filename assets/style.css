@@ -199,6 +199,7 @@ input::-webkit-search-cancel-button:active {
     position: absolute;
     transform: translateY(100%);
     bottom: 0;
+    z-index: 100;
     width: calc(100% - 3rem);
     max-width: 850px;
     max-height: 456px;
@@ -245,9 +246,10 @@ input::-webkit-search-cancel-button:active {
             opacity .2s ease;
         position: absolute;
         right: 0;
-        transform: translateX(-75%);
+        transform: translateX(-125%);
         font-size: 48pt;
-        content: '🠚';
+        content: url('/img/search-arrow-blue.svg');
+        width: 45px;
         color: var(--main-800);
         opacity: 0;
     }
@@ -278,8 +280,8 @@ input::-webkit-search-cancel-button:active {
     }
 
     &::after {
-        transform: translateX(-40%);
-        color: var(--text-light);
+        transform: translateX(-75%);
+        content: url('/img/search-arrow-white.svg');
     }
 }
 
@@ -373,19 +375,21 @@ select {
 
 .sort-popup {
     position: absolute;
-    margin-top: 3.5rem; 
     width: 100%;
     box-sizing: border-box;
-    top: 0;
+    bottom: 0;
     right: 0;
+    transform: translateY(100%);
     cursor: auto;
 
     display: none;
-    overflow-x: visible;
 
     padding: .5rem;
+    padding-top: 0;
     background-color: var(--main-300);
-    border-radius: var(--border-outer);
+    border-radius: 0 0 var(--border-outer) var(--border-outer);
+    box-shadow: 0 1rem 1rem hsla(0 0 1 / .1);
+    overflow-x: visible;
     color: var(--main-800);
 
     fieldset {
@@ -457,6 +461,15 @@ select:focus,
         display: grid;
         justify-items: start;
         gap: .5rem;
+    }
+
+    &::after{
+        position: absolute;
+        inset: 0;
+        content: "";
+        border-radius: var(--border-outer) var(--border-outer) 0 0;
+        z-index: -1;
+        background-color: var(--main-300);
     }
 }
 
