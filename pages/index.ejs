@@ -18,7 +18,7 @@
                 <input id="search-input" placeholder="Type a song name..."
                     type="search" autocomplete="off">
             </div>
-            <div id="suggestions" class="songs-suggestions hidden"></div>
+            <div id="suggestions" class="songs-suggestions hide-suggestions"></div>
         </div>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 31">
             <path fill="var(--main-300)" fill-opacity="1"
@@ -28,7 +28,7 @@
     <main>
         <section class="similar-songs hidden">
             <div class="list-header">
-                <span>Songs like <b id="echo-name">song</b> by <b id="echo-artist">artist</b></span>
+                <span style="width: 100%;">Songs like <b id="echo-name">song</b> by <b id="echo-artist">artist</b></span>
                 <button class="sort-toggle">
                     <span id="sort-label">Display Settings</span>
                     <img src="/img/sort-settings.svg" alt="" width="25px">
@@ -48,11 +48,9 @@
                         </div>
                     </div>
                 </button>
+                <button title="Back to top" class="to-top" id="to-top"><img src="/img/up-arrow.svg" height="25px" alt="To Top"></button>
             </div>
-            <div class="list"></div>
-            <div class=load-more>
-                <button class="load-button" onclick="loadMoreSongs()">Load More</button>
-            </div>
+            <div class="list">
             <!-- <div class="song-block">
                 <div class="song-info">
                     <img src="/img/placeholder.jpg">
@@ -66,11 +64,16 @@
                         <a title="Open in Amazon Music"><img src="/img/amazon-music.svg" alt=""></a>
                     </div>
                     <div class="song-playback">
-                        <button id="play-pause" class="play"><img src="/img/song-play.svg" alt="Play"></button>
+                        <button class="play" title="Play Preview"></button>
                     </div>
                     <button class="song-similar" onclick="searchSimilarFromResult()">Songs Like This</button>
                 </div>
             </div> -->
+            </div>
+            <div class="load-more">
+                <button class="load-button hidden" onclick="loadMoreSongs()">Load More</button>
+                <span id="noMoreSongs" class="hidden">No more songs to load</span>
+            </div>
         </section>
     </main>
 </body>

@@ -11,19 +11,37 @@ const suggestions = document.getElementById("suggestions");
 const similarSongs = document.querySelector(".similar-songs");
 const similarSongsList = document.querySelector(".list");
 
+const listHeader = document.querySelector(".list-header");
+const toTop = document.getElementById("to-top");
+
+const loadMore = document.querySelector(".load-more")
+const loadButton = document.querySelector(".load-button")
+const noMore = document.getElementById("noMoreSongs");
+
 const sortPopup = document.querySelector(".sort-popup")
 
 searchInput.addEventListener("keyup", checkTimeout);
+toTop.addEventListener("click", () => { window.scrollTo({top: 0, left: 0, behavior: "smooth"}) })
 
 // click outside search box or results box to close results
 window.addEventListener("click", (e) => {
     if (e.target != suggestions && e.target != searchInput && !suggestions.contains(e.target)) {
-        suggestions.classList.add("hidden");
+        suggestions.classList.add("hide-suggestions");
     }
     else if (e.target == searchInput && (searchInput.value != "")) {
         setTimeout(() => {
-            suggestions.classList.remove("hidden");
+            suggestions.classList.remove("hide-suggestions");
         }, 300);
+    }
+})
+
+window.addEventListener("scroll", () => {
+    const rect = listHeader.getBoundingClientRect();
+    if(rect.top <= 0){
+        toTop.classList.add("to-top-visible")
+    }
+    else{
+        toTop.classList.remove("to-top-visible")
     }
 })
 
@@ -75,12 +93,13 @@ function changeView(element){
 }
 
 function updateLoadButton() {
-    let loadMore = document.querySelector(".load-more")
-    if(songView == searchResults.length){
-        loadMore.style.display = "none";
+    if(similarSongsList.childNodes.length >= searchResults.length || resultsOffset * songView >= searchResults.length){
+        loadButton.classList.add("hidden")
+        noMore.classList.remove("hidden")
     }
     else {
-        loadMore.style.display = "flex";
+        loadButton.classList.remove("hidden")
+        noMore.classList.add("hidden")
     }
 }
 
@@ -102,7 +121,7 @@ async function getSuggestions() {
     let songs = await res.json();
     if (songs.status == "success") {
         removeSuggestions();
-        suggestions.classList.remove("hidden");
+        suggestions.classList.remove("hide-suggestions");
         songs.results.forEach((song) => {
             const button = document.createElement("button");
             button.classList.add("song-inline")
@@ -161,7 +180,7 @@ function getTitleArtist() {
 // searching for similar songs
 async function searchSimilarSongs(title, artist) {
     removeSimilarSongs();
-    suggestions.classList.add("hidden");
+    suggestions.classList.add("hide-suggestions");
     similarSongs.classList.remove("hidden");
 
     document.getElementById("echo-name").textContent = title;
@@ -212,18 +231,20 @@ function sortSimilarSongs(){
 
 function loadMoreSongs() {
     resultsOffset++;
-    if(resultsOffset * songView < searchResults.length){
-        return;
+    if(resultsOffset * songView > searchResults.length){
         updateLoadButton();
+        return;
     }
     else{
-        createSimilarSongsList(searchResults, resultsOffset * songView)
+        let offset = resultsOffset * songView
+        createSimilarSongsList(searchResults, offset)
     }
 }
 
 function createSimilarSongsList(songs, offset = 0){
     for(let i = 0 + offset; i < songView + offset; i++){
         setTimeout(() => {
+            updateLoadButton();
             let track = songs[i];
 
             const songBlock = document.createElement("div");
@@ -305,6 +326,12 @@ function createSimilarSongsList(songs, offset = 0){
             const preview = document.createElement("div")
             preview.classList.add("song-playback")
 
+            const playPause = document.createElement("button")
+            playPause.classList.add("play");
+            // playPause.onclick = playPreview;
+
+            preview.appendChild(playPause)
+
             // search similar
             const searchSimilar = document.createElement("button")
             searchSimilar.classList.add("song-similar");
@@ -331,7 +358,6 @@ function createSimilarSongsList(songs, offset = 0){
             songBlock.appendChild(actions)
 
             similarSongsList.appendChild(songBlock);
-            console.log("song added to page");
         }, 100 * i);
     }
 }
