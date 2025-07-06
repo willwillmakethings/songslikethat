@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/style.css" type="text/css">
+    <link rel="stylesheet" href="https://use.typekit.net/jqe1gld.css">
+    <title>templates</title>
+</head>
+
+<body>
+    <!-- -->
+    <div class="song-block">
+        <div class="song-info">
+            <img src="/img/placeholder.jpg">
+            <p>Song Name</p>
+            <span>Artist</span>
+        </div>
+        <div class="row">
+            <div class="song-links">
+                <a class="no-link" title="Open in Apple Music"><img src="/img/apple-music.svg" alt=""></a>
+                <a title="Open in Spotify"><img src="/img/spotify.svg" alt=""></a>
+                <a title="Open in Amazon Music"><img src="/img/amazon-music.svg" alt=""></a>
+            </div>
+            <div class="song-playback">
+                <button class="play" title="Play Preview"></button>
+            </div>
+            <button class="song-similar" onclick="searchSimilarFromResult()">Songs Like This</button>
+        </div>
+    </div>
+    <!--  -->
+    <button class="card">
+        <p>songs like</p>
+        <div class="song-info">
+            <img src="/img/placeholder.jpg" alt="">
+            <p id="searchTitle">Song Name</p>
+            <span id="searchArtist">Artist</span>
+        </div>
+        <div class="top-3">
+            <div class="song-info-small">
+                <img id="similarAlbum1" width="50px" src="/img/placeholder.jpg" alt="">
+                <p id="similarTitle1">Song Name</p>
+                <span id="similarArtist1">Artist</span>
+            </div>
+            <div class="song-info-small">
+                <img id="similarAlbum2" width="50px" src="/img/placeholder.jpg" alt="">
+                <p id="similarTitle2">Song Name</p>
+                <span id="similarArtist2">Artist</span>
+            </div>
+            <div class="song-info-small">
+                <img id="similarAlbum3" width="50px" src="/img/placeholder.jpg" alt="">
+                <p id="similarTitle3">Song Name</p>
+                <span id="similarArtist3">Artist</span>
+            </div>
+        </div>
+        <span class="label">Search Again</span>
+    </button>
+</body>
+
+</html>

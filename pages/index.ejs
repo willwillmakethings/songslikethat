@@ -15,29 +15,32 @@
             <h1>songslikethat</h1>
             <p>For when you heard a song and thought: <i>"I want more songs like that!"</i></p>
             <div class="search">
-                <input id="search-input" placeholder="Type a song name..."
-                    type="search" autocomplete="off">
+                <input id="search-input" placeholder="Type a song name..." type="search" autocomplete="off">
             </div>
             <div id="suggestions" class="songs-suggestions hide-suggestions"></div>
         </div>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 31">
-            <path fill="var(--main-300)" fill-opacity="1"
-                d="M1440,31l-120-5.3c-120-5.7-360-15.7-600-16-240,.3-480,10.3-600,16L0,31V0h1440v31Z" />
+        <svg id="header-curve" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 31">
+            <path fill="var(--main-300)" fill-opacity="1" d="M1440,31l-120-5.3c-120-5.7-360-15.7-600-16-240,.3-480,10.3-600,16L0,31V0h1440v31Z" />
         </svg>
     </header>
     <main>
         <section class="similar-songs hidden">
             <div class="list-header">
-                <span style="width: 100%;">Songs like <b id="echo-name">song</b> by <b id="echo-artist">artist</b></span>
+                <span style="width: 100%;">Songs like <b id="echo-name">song</b> by <b
+                        id="echo-artist">artist</b></span>
                 <button class="sort-toggle">
                     <span id="sort-label">Display Settings</span>
                     <img src="/img/sort-settings.svg" alt="" width="25px">
                     <div class="sort-popup">
                         <span>Sorting</span>
-                        <a class="option checked" name="sorting" id="pop-low-high" onclick="changeSort(this)">Popularity, High to Low</a>
-                        <a class="option" name="sorting" id="pop-high-low" onclick="changeSort(this)">Popularity, Low to High</a>
-                        <a class="option" name="sorting" id="date-new-old" onclick="changeSort(this)">Date, Newest to Oldest</a>
-                        <a class="option" name="sorting" id="date-old-new" onclick="changeSort(this)">Date, Oldest to Newest</a>
+                        <a class="option checked" name="sorting" id="pop-low-high"
+                            onclick="changeSort(this)">Popularity, High to Low</a>
+                        <a class="option" name="sorting" id="pop-high-low" onclick="changeSort(this)">Popularity, Low to
+                            High</a>
+                        <a class="option" name="sorting" id="date-new-old" onclick="changeSort(this)">Date, Newest to
+                            Oldest</a>
+                        <a class="option" name="sorting" id="date-old-new" onclick="changeSort(this)">Date, Oldest to
+                            Newest</a>
                         <span>Songs per page</span>
                         <div class="row">
                             <a class="option checked" name="view" id="10" onclick="changeView(this)">10</a>
@@ -48,34 +51,37 @@
                         </div>
                     </div>
                 </button>
-                <button title="Back to top" class="to-top" id="to-top"><img src="/img/up-arrow.svg" height="25px" alt="To Top"></button>
+                <button title="Back to top" class="to-top" id="to-top"><img src="/img/up-arrow.svg" height="25px"
+                        alt="To Top"></button>
             </div>
-            <div class="list">
-            <!-- <div class="song-block">
-                <div class="song-info">
-                    <img src="/img/placeholder.jpg">
-                    <p>Song Name</p>
-                    <span>Artist</span>
-                </div>
-                <div class="row">
-                    <div class="song-links">
-                        <a class="no-link" title="Open in Apple Music"><img src="/img/apple-music.svg" alt=""></a>
-                        <a title="Open in Spotify"><img src="/img/spotify.svg" alt=""></a>
-                        <a title="Open in Amazon Music"><img src="/img/amazon-music.svg" alt=""></a>
-                    </div>
-                    <div class="song-playback">
-                        <button class="play" title="Play Preview"></button>
-                    </div>
-                    <button class="song-similar" onclick="searchSimilarFromResult()">Songs Like This</button>
-                </div>
-            </div> -->
-            </div>
+            <div class="list"></div>
             <div class="load-more">
                 <button class="load-button hidden" onclick="loadMoreSongs()">Load More</button>
                 <span id="noMoreSongs" class="hidden">No more songs to load</span>
             </div>
         </section>
     </main>
+    <footer>
+        <section class="recently-searched">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 31">
+                <path fill="var(--main-300)" fill-opacity="1" d="M1440,31l-120-5.3c-120-5.7-360-15.7-600-16-240,.3-480,10.3-600,16L0,31V0h1440v31Z" />
+            </svg>
+            <div class="recent-inner">
+                <p>Recent Searches</p>
+                <div class="card-scroller-wrapper">
+                    <span class="recent-placeholder">Search for similar songs, and the 5 most recent results will appear here</span>
+                    <div class="card-scroller"></div>
+                </div>
+            </div>
+        </section>
+        <section class="footer-logo">
+            <div class="logo-inner">
+                <img src="/img/songslikethat-logo-blue.png" alt="" width="70px">
+                <h1>songslikethat</h1>
+                <p>Made by Will</p>
+            </div>
+        </section>
+    </footer>
 </body>
 
 </html>
