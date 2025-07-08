@@ -12,99 +12,133 @@ app.set('views', './pages')
 app.set('view engine', 'ejs');
 
 app.listen(port, () => {
-    console.log(`App listening on port ${port}`)
+  console.log(`App listening on port ${port}`)
 })
 
 app.get('/', (req, res) => {
-    res.render('index.ejs')
+  res.render('index.ejs')
 })
 
 app.post('/search', (req, res) => {
-    let { searchTerm } = req.body;
-    getSuggestions();
+  let { searchTerm } = req.body;
+  getSuggestions();
 
-    // get and send list of songs for the search term
-    async function getSuggestions() {
-        let results = (await fetchSpotifyApi(searchTerm)).tracks.items;
-        let suggestions = deDuplicate(results, 10)
-        res.status(200).json({ status: "success", results: suggestions });
-    }
+  // get and send list of songs for the search term
+  async function getSuggestions() {
+    let results = (await fetchSpotifyApi(searchTerm)).tracks.items;
+    let suggestions = deDuplicate(results, 10)
+    res.status(200).json({ status: "success", results: suggestions });
+  }
 })
 
-app.post('/searchSimilar/:title-:artist', (req, res) => {
-    var { title, artist } = req.params;
-    getSimilar();
+app.post('/searchSimilar/:id', (req, res) => {
+  var { id } = req.params;
+  getSimilar();
 
-    // get and send similar songs for input song
-    async function getSimilar() {
-        let results = (await findSimilarSongs(title, artist));
-        res.status(200).json({ status: "success", results: results});
-    }
+  // get and send similar songs for input song
+  async function getSimilar() {
+    let results = await findSimilarSongs(id);
+    res.status(200).json({ status: "success", results: results });
+  }
 })
 
-async function fetchSpotifyApi(title, artist = "") {
-    let token = await getToken();
-    let query;
+app.post('/getSongInfo/:id', (req, res) => {
+  var { id } = req.params;
+  getSong();
 
-    if (artist != "") {
-        // get the actual song after we've searched for it with title + artist
-        query = new URLSearchParams({
-            q: title, artist,
-            type: 'track',
-            limit: 1,
-            offset: 0,
-            market: 'US'
-        }).toString();
-    }
-    else {
-        // get suggested results from just searching the title
-        query = new URLSearchParams({
-            q: title,
-            type: 'track',
-            limit: 50,
-            offset: 0,
-            market: 'US'
-        }).toString();
-    }
+  // get and send similar songs for input song
+  async function getSong() {
+    let results = await songFromId(id);
+    res.status(200).json({ status: "success", results: results });
+  }
+})
 
-    const songsRes = await fetch(`https://api.spotify.com/v1/search?${query}`, {
-        method: "GET",
-        headers: {
-            "Authorization": `Bearer ${token}`
-        },
-    });
+// takes in spotify id, returns song object
+async function songFromId(id){
+  let token = await getToken();
 
-    if (!songsRes.ok) {
-        throw new Error(`Spotify API error ${songsRes.status}`);
-    }
+  const IdRes = await fetch(`https://api.spotify.com/v1/tracks/${id}?market=us`, {
+    method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token}`
+    },
+  });
 
-    let songsList = await songsRes.json();
-    return songsList;
+  if (!IdRes.ok) {
+    throw new Error(`Spotify API error ${IdRes.status}, ${IdRes.message}`);
+  }
+
+  let track = (await IdRes.json());
+  return track;
+}
+
+async function fetchSpotifyApi(title, id = "") {
+  let token = await getToken();
+  let query;
+
+  if (id != "") {
+    // get the actual song after we've searched for it with title + artist
+    query = new URLSearchParams({
+      q: title, artist,
+      type: 'track',
+      limit: 1,
+      offset: 0,
+      market: 'US'
+    }).toString();
+  }
+  else {
+    // get suggested results from just searching the title
+    query = new URLSearchParams({
+      q: title,
+      type: 'track',
+      limit: 50,
+      offset: 0,
+      market: 'US'
+    }).toString();
+  }
+
+  const songsRes = await fetch(`https://api.spotify.com/v1/search?${query}`, {
+    method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token}`
+    },
+  });
+
+  if (!songsRes.ok) {
+    throw new Error(`Spotify API error ${songsRes.status}`);
+  }
+
+  let songsList = await songsRes.json();
+  return songsList;
 }
 
 async function getRelatedArtists(artistName) {
-    const TASTEDIVE_API_KEY = process.env.TASTEDIVE_API_KEY
-    const query = encodeURIComponent(artistName);
+  const TASTEDIVE_API_KEY = process.env.TASTEDIVE_API_KEY
+  const query = encodeURIComponent(artistName);
 
-    const res = await fetch(
-        `https://tastedive.com/api/similar?q=${query}&type=music&info=0&limit=10&k=${TASTEDIVE_API_KEY}`
-    );
+  const res = await fetch(
+    `https://tastedive.com/api/similar?q=${query}&type=music&info=0&limit=10&k=${TASTEDIVE_API_KEY}`
+  );
 
-    if (!res.ok) {
-        console.error("TasteDive API error:", await res.text());
-        return [];
-    }
+  if (!res.ok) {
+    console.error("TasteDive API error:", await res.text());
+    return [];
+  }
 
-    const json = await res.json();
-    const results = json?.similar?.results || [];
+  const json = await res.json();
+  const results = json?.similar?.results || [];
 
-    // Extract just the artist names
-    const artistNames = results.map(entry => entry.name);
-    return artistNames;
+  // Extract just the artist names
+  const artistNames = results.map(entry => entry.name);
+  return artistNames;
 }
 
-async function findSimilarSongs(title, artist) {
+async function findSimilarSongs(id) {
   let token = await getToken();
+
+  let title = (await songFromId(id)).name;
+  let artist = (await songFromId(id)).artists[0].name;
+
   const headers = { Authorization: `Bearer ${token}` };
 
   const relatedArtistNames = await getRelatedArtists(artist);
@@ -131,7 +165,7 @@ async function findSimilarSongs(title, artist) {
         allTracks.push({
           id: track.id,
           title: track.name,
-          artist: track.artists.map(a => a.name).join(', '),
+          artist: artistNameFromArray(track.artists),
           albumImage: track.album.images?.[0]?.url || null,
           spotifyUrl: track.external_urls.spotify,
           appleMusicUrl: await getAppleMusicUrl(track.name, name),
@@ -150,6 +184,10 @@ async function findSimilarSongs(title, artist) {
 }
 
 // helper functions
+function artistNameFromArray(array) {
+  return array.map((artist) => (artist.name))
+}
+
 async function retryFetchJSON(url, options = {}, maxRetries = 3, delay = 300) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -171,21 +209,21 @@ async function retryFetchJSON(url, options = {}, maxRetries = 3, delay = 300) {
 }
 
 async function getToken() {
-    const CLIENT_SECRET = process.env.CLIENT_SECRET;
-    const CLIENT_ID = process.env.CLIENT_ID;
+  const CLIENT_SECRET = process.env.CLIENT_SECRET;
+  const CLIENT_ID = process.env.CLIENT_ID;
 
-    // get access token
-    const tokenRes = await fetch("https://accounts.spotify.com/api/token", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Authorization": "Basic " + Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString("base64")
-        },
-        body: "grant_type=client_credentials"
-    })
+  // get access token
+  const tokenRes = await fetch("https://accounts.spotify.com/api/token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "Authorization": "Basic " + Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString("base64")
+    },
+    body: "grant_type=client_credentials"
+  })
 
-    let token = (await tokenRes.json()).access_token;
-    return token
+  let token = (await tokenRes.json()).access_token;
+  return token
 }
 
 async function getAppleMusicUrl(title, artist) {
@@ -195,40 +233,36 @@ async function getAppleMusicUrl(title, artist) {
 }
 
 function deDuplicate(songsList, maxLength) {
-    let seen = new Set();
-    const uniqueTracks = [];
+  let seen = new Set();
+  const uniqueTracks = [];
 
-    // filter for 10 unique results
-    for (const track of songsList) {
-        const artist = track.artists[0]?.name?.toLowerCase().trim();
-        const name = track.name.toLowerCase().replace(/\*/g, '').trim();
-        const key = `${artist}-${name}`;
+  // filter for 10 unique results
+  for (const track of songsList) {
+    const artist = track.artists[0]?.name?.toLowerCase().trim();
+    const name = track.name.toLowerCase().replace(/\s*\(from [^)]+\)/gi, '').replace(/\*/g, '').trim();
+    const key = `${artist}-${name}`;
 
-        if (!seen.has(key)) {
-            seen.add(key);
-            uniqueTracks.push(track);
-        }
-
-        if (uniqueTracks.length === maxLength) break;
+    if (!seen.has(key)) {
+      seen.add(key);
+      uniqueTracks.push(track);
     }
 
-    // format for frontend
-    let artistList = [];
-    let suggestions = [];
+    if (uniqueTracks.length === maxLength) break;
+  }
 
-    for (let i = 0; i < uniqueTracks.length; i++) {
-        let artists = ""
+  // format for frontend
+  let artistList = [];
+  let suggestions = [];
 
-        for (let j = 0; j < uniqueTracks[i].artists.length; j++) {
-            artists += uniqueTracks[i].artists[j].name;
-            if (j != uniqueTracks[i].artists.length - 1) {
-                artists += ", "
-            }
-        }
+  for (let i = 0; i < uniqueTracks.length; i++) {
+    artistList[i] = artistNameFromArray(uniqueTracks[i].artists);
+    suggestions[i] = [
+      uniqueTracks[i].album.images[(uniqueTracks[i].album.images).length - 1].url,
+      uniqueTracks[i].name, 
+      artistList[i],
+      uniqueTracks[i].id
+    ]
+  }
 
-        artistList[i] = artists;
-        suggestions[i] = [uniqueTracks[i].album.images[(uniqueTracks[i].album.images).length - 1].url, uniqueTracks[i].name, artistList[i]]
-    }
-
-    return suggestions;
+  return suggestions;
 }

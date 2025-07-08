@@ -7,7 +7,6 @@
 }
 
 /* default styling */
-
 :root {
     /* colors */
     --main-100: #ECF8FD;
@@ -18,6 +17,7 @@
     --main-800: #0E283C;
 
     --accent-200: #FBF6E8;
+    --accent-300: #f1e6c7;
     --accent-500: #a79c7f;
 
     --body-bg: #FCFCFC;
@@ -27,7 +27,6 @@
     --text-800: #09090c;
 
     /* font styles */
-    --fw-light: 200;
     --fw-thin: 300;
     --fw-regular: 400;
     --fw-medium: 500;
@@ -36,6 +35,7 @@
 
     --fs-800: 40pt;
     --fs-700: 36pt;
+    --fs-650: 30pt;
     --fs-600: 24pt;
     --fs-500: 20pt;
     --fs-400: 16pt;
@@ -59,6 +59,13 @@ body {
 h1 {
     font-size: var(--fs-800);
     font-weight: var(--fw-bold);
+    font-family: 'degular-display', sans-serif;
+    color: var(--main-800);
+}
+
+h2 {
+    font-size: var(--fs-650);
+    font-weight: var(--fw-semibold);
     font-family: 'degular-display', sans-serif;
     color: var(--main-800);
 }
@@ -109,7 +116,7 @@ header{
     background-color: var(--main-300);
 
     padding: 1.5rem;
-    padding-bottom: .75rem;
+    padding-bottom: 0.25rem;
 
     >p,
     >h1 {
@@ -131,11 +138,9 @@ header{
     margin-top: 1.5rem;
     border-radius: var(--border-outer);
     background: var(--accent-200);
-
-    box-shadow: 0 0 30px var(--main-100);
 }
 
-input,
+#search-input,
 button {
     font-weight: var(--fw-medium);
     font-family: 'degular', sans-serif;
@@ -148,7 +153,7 @@ button {
         padding .2s ease;
 }
 
-input {
+#search-input {
     width: 100%;
     padding-inline: 1rem;
     outline: 0px solid var(--main-800);
@@ -160,24 +165,13 @@ input {
     }
 }
 
-.search>button {
-    cursor: pointer;
-    padding: 1rem;
-    padding-inline: 1.5rem;
-    color: var(--text-800);
-    background-color: var(--main-300);
-    outline: 0px solid var(--main-800);
-}
-
-.search>button:focus,
-input:focus,
-.search>button:hover {
+#search-input:focus {
     outline-width: 5px;
     outline-offset: -5px;
     color: var(--main-800);
 }
 
-input::-webkit-search-cancel-button {
+#search-input::-webkit-search-cancel-button {
     -webkit-appearance: none;
     height: 1em;
     width: 1em;
@@ -190,12 +184,12 @@ input::-webkit-search-cancel-button {
     transition: transform .2s ease;
 }
 
-input:focus::-webkit-search-cancel-button {
+#search-input:focus::-webkit-search-cancel-button {
     transform: scale(1);
     pointer-events: all;
 }
 
-input::-webkit-search-cancel-button:active {
+#search-input::-webkit-search-cancel-button:active {
     transform: scale(.95);
     pointer-events: all;
 }
@@ -207,7 +201,7 @@ input::-webkit-search-cancel-button:active {
 
     position: absolute;
     transform: translateY(100%);
-    bottom: 2rem;
+    bottom: 83px;
     z-index: 100;
     width: calc(100% - 3rem);
     max-width: 850px;
@@ -218,27 +212,33 @@ input::-webkit-search-cancel-button:active {
     display: grid;
     box-shadow: 0 0 30px var(--main-100);
 
-    height: 456px;
-    transition: height .3s ease, border-block-width 1ms ease;
+    height: 527px;
+    transition: height .3s ease;
 
     background-color: var(--accent-200);
-    padding-right: .5rem;
-    border: .5rem solid var(--accent-200);
-    border-top-width: 1.5rem;
-    border-radius: 0 0 var(--border-outer) var(--border-outer);
+    padding: .5rem;
+    padding-top: 0;
+    border: 0 solid var(--accent-200);
+    border-top-width: 79px;
+    border-radius: var(--border-outer);
+    border-bottom-right-radius: 0;
 
     scrollbar-color: var(--accent-500) var(--accent-200);
 }
 
 .hide-suggestions {
     height: 0;
-    border-block-width: 0;
+    border-bottom-right-radius: var(--border-outer);
+    padding: 0;
 }
 
 .song-inline {
-    display: flex;
+    display: grid;
+    width: 100%;
+    grid-template-rows: 1fr 1fr;
+    grid-template-columns: auto 1fr;
+    column-gap: 1rem;
     align-items: center;
-    gap: 1rem;
     padding: .75rem;
     color: var(--text-800);
 
@@ -254,7 +254,19 @@ input::-webkit-search-cancel-button:active {
         pointer-events: none;
         text-align: left;
         width: fit-content;
-        text-box: trim-both ex alphabetic;
+        /* text-box: trim-both ex alphabetic; */
+    }
+
+    > img{
+        grid-row: 1/3;
+    }
+
+    p,
+    span {
+        text-wrap: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        width: 80%;  
     }
 
     &::after {
@@ -301,12 +313,61 @@ input::-webkit-search-cancel-button:active {
     }
 }
 
-/* list of songs */
-
 main {
     width: 100%;
     box-sizing: border-box;
 }
+
+/* home blurb */
+
+.home{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    min-height: 350px;
+    padding: 1rem;
+}
+
+.welcome{
+    background-color: var(--main-100);
+    border-radius: var(--border-outer);
+    outline: 2px solid var(--main-200);
+
+    max-width: 850px;
+    height: fit-content;
+    box-sizing: border-box;
+    padding: 1rem;
+    margin-top: 3rem;
+
+    text-align: center;
+    text-wrap: balance
+}
+
+.loader {
+    width: 100%;
+    height: fit-content;
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: center;
+
+    svg {
+        fill: var(--main-800);
+        max-width: 500px;
+    }
+
+    p, b {
+        color: var(--main-800);
+    }
+
+    b {
+        font-weight: var(--fw-semibold)
+    }
+}
+
+/* list of songs */
 
 .similar-songs {
     display: flex;
@@ -348,6 +409,32 @@ main {
     gap: .5rem;
 }
 
+#breadcrumbs {
+    width: 100%;
+
+    li {
+        font-family: 'degular', sans-serif;
+        font-size: var(--fs-500);
+        font-weight: var(--fw-thin);
+        color: var(--text-800);
+        font-style: italic;
+        text-decoration: none;
+        display: inline-block;
+        /* cursor: pointer; */
+    }
+    
+    li::marker {
+        width: 1.5ch;
+        font-size: 28pt;
+    }
+
+    svg {
+        width: 1.5ch;
+        fill: var(--text-800);
+        padding-inline: .5rem;
+    }
+}
+
 .sort-toggle {
     background-color: var(--main-300) !important;
     border-radius: var(--border-outer);
@@ -372,6 +459,7 @@ main {
     padding: .7rem 1rem;
 
     width: 3.5rem;
+    fill: var(--main-800);
 
     place-items: center;
     white-space: nowrap;
@@ -477,6 +565,8 @@ select:focus,
     width: 0;
     padding-inline: 0;
 
+    fill: var(--main-800);
+
     outline: 0px solid var(--main-800);
     outline-offset: -5px;
 
@@ -501,6 +591,8 @@ select:focus,
 
 .to-top:active {
     background-color: var(--main-800);
+    fill: var(--text-100);
+
 }
 
 .to-top-visible {
@@ -563,7 +655,6 @@ select:focus,
     grid-template-rows: 1fr 1fr;
     grid-template-columns: auto 1fr;
     column-gap: 1rem;
-    text-overflow: ellipsis;
 
     >img {
         grid-row: 1 / 3;
@@ -572,6 +663,15 @@ select:focus,
 
     >p {
         align-self: end;
+    }
+
+    p,
+    span {
+        text-align: left;
+        width: 100%;  
+        overflow: hidden;
+        text-wrap: nowrap;
+        text-overflow: ellipsis;
     }
 }
 
@@ -778,9 +878,9 @@ select:focus,
     flex-direction: column;
     background-color: var(--main-300);
 
-    > p {
-        padding-block: 1.5rem 1rem;
-        padding-inline: 1rem;
+    > h2 {
+        padding-block: .5rem;
+        padding-inline: 2rem;
     }
 }
 
@@ -793,7 +893,7 @@ select:focus,
 }
 
 .card-scroller-wrapper {
-    height: 450px;
+    height: 475px;
     width: 100vw;
     overflow-y: hidden;
     scrollbar-width: none;
@@ -830,15 +930,6 @@ select:focus,
     > p {
         color: var(--accent-500)
     }
-
-    .song-info p,
-    .song-info span {
-        text-align: left;
-        width: fit-content;  
-        overflow: hidden;
-        text-wrap: nowrap;
-        text-overflow: ellipsis;
-    }
 }
 
 .card:focus,
@@ -858,6 +949,12 @@ select:focus,
     flex-direction: column;
     gap: .5rem;
     width: 100%;
+
+    > span {
+        color: var(--accent-500);
+        font-style: normal;
+        font-size: var(--fs-400);
+    }
 }
 
 .song-info-small {
@@ -866,7 +963,7 @@ select:focus,
     grid-template-rows: 1fr 1fr;
     column-gap: .75rem;
 
-    background-color: var(--main-300);
+    background-color: var(--accent-300);
     border-radius: var(--border-inner);
 
     padding: .5rem;

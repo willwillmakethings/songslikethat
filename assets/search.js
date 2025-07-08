@@ -7,7 +7,7 @@ let resultsOffset = 0;
 let searchSuggestions;
 let searchResults;
 
-/* array of [[Song, Results], ...]
+/* array of [{Song, Results}, ...]
 where:
 1. song is an object with song.artist, song.title, and song.albumImage
 representing the song that was searched for
@@ -24,6 +24,11 @@ const similarSongs = document.querySelector(".similar-songs");
 const similarSongsList = document.querySelector(".list");
 
 const listHeader = document.querySelector(".list-header");
+const loader = document.querySelector(".loader")
+const breadcrumbs = document.getElementById("breadcrumbs")
+const arrow = document.getElementById("arrow");
+
+const sortButton = document.querySelector(".sort-toggle")
 const sortPopup = document.querySelector(".sort-popup")
 const toTop = document.getElementById("to-top");
 
@@ -52,6 +57,11 @@ toTop.addEventListener("blur", () => {
     toTop.classList.remove("to-top-focus")
 })
 
+sortButton.addEventListener("focus", () => {
+    suggestions.classList.add("hide-suggestions")
+    removeSuggestions();
+})
+
 // click outside search box or results box to close results
 window.addEventListener("click", (e) => {
     if (e.target != suggestions && e.target != searchInput && !suggestions.contains(e.target)) {
@@ -78,15 +88,34 @@ window.addEventListener("scroll", () => {
 
 window.addEventListener('popstate', (event) => {
     const params = new URLSearchParams(window.location.search);
-    const query = params.get('q');
+    const query = params.get('id');
 
     if (query) {
-        const [title, artist] = query.split('-').map(decodeURIComponent);
-        document.title = `songslike ${title} by ${artist}`;
-        // searchSimilarSongs(title, artist);
-        // searchFromCache
+        const id = query;
+        updateTitle(id)
+        searchFromCacheOrNew(id)
     }
 });
+
+window.addEventListener("DOMContentLoaded", () => {
+    const loadedCachedResults = loadCachedResultsFromStorage();
+    if (loadedCachedResults) {
+        cachedResults = loadedCachedResults;
+        createRecentCards(cachedResults);
+    }
+
+    else {
+        // check if the url has search terms in it, and if so, search!
+        const params = new URLSearchParams(window.location.search);
+        const query = params.get('id');
+
+        if (query) {
+            const id = query;
+            updateTitle(id)
+            searchSimilarSongs(id)
+        }
+    }
+})
 
 // check if the user pauses typing before searching for matching songs
 function checkTimeout() {
@@ -134,36 +163,53 @@ function removeSuggestions() {
 }
 
 // update the url to reflec the song the user searched
-function updateURL(title, artist) {
-    const query = `${encodeURIComponent(title)}-${encodeURIComponent(artist)}`;
-    const newURL = `${window.location.origin}/?q=${query}`;
+function updateURL(id) {
+    const query = `${encodeURIComponent(id)}`;
+    const newURL = `${window.location.origin}/?id=${query}`;
 
-    history.pushState({ title, artist }, '', newURL);
-    document.title = `songslike ${title} by ${artist}`;
+    history.pushState(id, '', newURL);
+    updateTitle(id)
+}
+
+async function updateTitle(id) {
+    let data = await songInfoFromId(id)
+    document.title = `songslike ${(data.results.name)} by ${data.results.artists[0].name}`;
 }
 
 // get the title and artist from the suggestion that was clicked
 function getTitleArtist() {
-    let albumImage = this.childNodes[0].src;
-    let title = this.childNodes[1].textContent;
-    let artist = this.childNodes[2].textContent;
+    loader.remove();
+    const id = this.id;
+    searchSimilarSongs(id);
+}
 
-    updateURL(title, artist);
-    searchSimilarSongs(title, artist, albumImage);
+async function songInfoFromId(id) {
+    const infoRes = await fetch(`${serverURL}/getSongInfo/${encodeURIComponent(id)}`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+    });
+
+    let data = await infoRes.json()
+    return data;
 }
 
 // searching for similar songs
-async function searchSimilarSongs(title, artist, albumImage = "") {
+async function searchSimilarSongs(id) {
     removeSimilarSongs();
     removeSuggestions();
+    removeHomeBlurb();
+
     similarSongs.classList.remove("hidden");
+    similarSongs.insertBefore(loader, similarSongsList)
     listHeader.style.marginTop = headerCurve.clientHeight + "px";
 
-    document.getElementById("echo-name").textContent = title;
-    document.getElementById("echo-artist").textContent = artist;
+    createBreadcrumb(id);
+    updateURL(id);
     resultsOffset = 0;
 
-    const res = await fetch(`${serverURL}/searchSimilar/${encodeURIComponent(title)}-${encodeURIComponent(artist)}`, {
+    const res = await fetch(`${serverURL}/searchSimilar/${encodeURIComponent(id)}`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -173,19 +219,12 @@ async function searchSimilarSongs(title, artist, albumImage = "") {
     const results = (await res.json());
     if (results.status == "success") {
         searchResults = results.results
-        console.log("search results", searchResults)
 
         // cache results and search title/artist/albumImage
-        let song = ({albumImage: albumImage, title: title, artist: artist })
-        cachedResults.unshift({ song: song, results: searchResults })
-        console.log("cached results", cachedResults);
-        if (cachedResults.length >= 5) {
-            cachedResults.pop();
-        }
+        addToCache(id, searchResults)
 
         sortSimilarSongs(searchResults);
         createSimilarSongsList(searchResults);
-        createRecentSearch(song, searchResults)
     }
 }
 
@@ -201,22 +240,58 @@ function removeSimilarSongs() {
     }
 }
 
-function searchSimilarFromResult() {
-    const song = (this.id).split("%2c")
-    const title = song[0];
-    const artist = song[1];
-    const albumImage = song[2];
+function removeHomeBlurb() {
+    let home = document.querySelector(".home");
+    if (home) { home.remove() };
+}
 
-    updateURL(title, artist);
-    searchSimilarSongs(title, artist, albumImage)
+async function createBreadcrumb(id) {
+    removeBreadcrumbs();
+
+    let data = await songInfoFromId(id);
+    let artist = formatArtistNames((data.results.artists).map((artist) => artist.name), false)
+    let titleText = (data.results.name);
+
+    let breadcrumbCount = document.querySelectorAll("li").length
+    let newArrow = arrow.cloneNode(true);
+    newArrow.classList.remove("hidden");
+
+    let breadcrumb = document.createElement("li")
+    breadcrumb.setAttribute("data-index", breadcrumbCount)
+
+    let title = document.createElement("b")
+    let artistText = document.createElement("b");
+    title.textContent = titleText;
+    title.id = "title";
+    artistText.textContent = artist;
+    artistText.id = "artist"
+
+    breadcrumb.append(title, " by ", artistText)
+    breadcrumbs.append(breadcrumb);
+}
+
+function removeBreadcrumbs() {
+    let allBreadcrumbs = document.querySelectorAll("li");
+    let visibleArrows = document.querySelectorAll("#arrow");
+
+    for (let i = allBreadcrumbs.length - 1; i >= 0; i--) {
+        allBreadcrumbs[i].remove()
+        if (!visibleArrows[i].classList.contains("hidden")) {
+            visibleArrows[i].remove()
+        }
+    }
+}
+
+function searchSimilarFromResult() {
+    searchFromCacheOrNew(this.id);
 }
 
 function sortSimilarSongs() {
     switch (songSort) {
-        case "pop-high-low":
+        case "pop-low-high":
             searchResults.sort((a, b) => b.popularity - a.popularity);
             break;
-        case "pop-low-high":
+        case "pop-high-low":
             searchResults.sort((a, b) => a.popularity - b.popularity);
             break;
         case "date-new-old":
@@ -267,7 +342,7 @@ function loadMoreSongs() {
 }
 
 function updateLoadButton() {
-    if (similarSongsList.childNodes.length >= searchResults.length || resultsOffset * songView >= searchResults.length) {
+    if (!searchResults || similarSongsList.childNodes.length >= searchResults.length || resultsOffset * songView >= searchResults.length) {
         loadButton.classList.add("hidden")
         noMore.classList.remove("hidden")
     }
@@ -278,18 +353,125 @@ function updateLoadButton() {
 }
 
 // use cached searched results to load results fast
-function searchFromCache() {
+async function searchFromCache(cachedEntry) {
+    removeHomeBlurb()
     removeSimilarSongs();
-    let searchId = parseInt(this.id);
-    let title = cachedResults[searchId].song.title;
-    let artist = cachedResults[searchId].song.artist;
+    let id;
+    window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+    similarSongs.classList.remove("hidden");
 
-    document.getElementById("echo-name").textContent = title;
-    document.getElementById("echo-artist").textContent = artist;
-    window.scrollTo({top: 0, left: 0, behavior: "smooth"});
+    /* is this function being called from searchFromCacheOrNew **/
+    if (this && this.id !== undefined) {
+        index = getCachedResultIndex(this.id)
+        id = this.id;
+        addToCache(cachedResults[index].id, cachedResults[index].results)
+        createSimilarSongsList(cachedResults[index].results);
+    }
+    /* or is this function being called from pressing on one of the recent search cards **/
+    else {
+        id = cachedEntry.id
+        addToCache(cachedEntry.id, cachedEntry.results)
+        createSimilarSongsList(cachedEntry.results);
+    }
 
-    updateURL(title, artist)
-    createSimilarSongsList(cachedResults[searchId].results);
+    updateURL(id)
+    createBreadcrumb(id)
+
+    similarSongs.classList.remove("hidden");
+    listHeader.style.marginTop = headerCurve.clientHeight + "px";
+    resultsOffset = 0;
+}
+
+// checks if the title and artist are in the cache
+// if yes: pulls results from cache without loading for 5+ seconds
+// if no: creates a new search 
+function searchFromCacheOrNew(id) {
+    const cachedEntry = cachedResults.find(entry => { return entry.id === id });
+
+    if (cachedEntry) {
+        searchResults = cachedEntry.results;
+        searchFromCache(cachedEntry);
+    } else {
+        searchSimilarSongs(id); // fallback to API search
+    }
+}
+
+// if the song/results are in the cache already, remove them before adding them again
+// if not, just add them like normal
+function addToCache(id, results) {
+    if (!Array.isArray(cachedResults)) cachedResults = [];
+
+    const cacheIndex = getCachedResultIndex(id);
+
+    if (cacheIndex !== -1) {
+        const cards = document.querySelectorAll(".card");
+        if (cards[cacheIndex]) cards[cacheIndex].remove();
+        cachedResults.splice(cacheIndex, 1);
+    }
+
+    cachedResults.unshift({ id, results });
+
+    if (cachedResults.length > 6) {
+        cachedResults.pop();
+    }
+
+    saveCachedResultsToStorage();
+    createRecentSearch(id, results);
+}
+
+function saveCachedResultsToStorage() {
+    try {
+        console.log("cached results saved ", cachedResults);
+        translateCache(cachedResults);
+        localStorage.setItem('cachedResults', JSON.stringify(cachedResults));
+    } catch (e) {
+        console.warn("Failed to save cachedResults to localStorage:", e);
+    }
+}
+
+async function translateCache(cache) {
+    let transCache = [];
+    for (let i = 0; i < cache.length; i++) {
+        let data = await songInfoFromId(cache[i].id);
+        let songArtist = formatArtistNames((data.results.artists).map((artist) => artist.name))
+        let songTitle = (data.results.name);
+        transCache.push({ title: songTitle, artist: songArtist });
+    }
+    console.log("cached results (translated) ", transCache)
+
+}
+
+function loadCachedResultsFromStorage() {
+    try {
+        const data = JSON.parse(localStorage.getItem('cachedResults') || '[]');
+        console.log("cached results loaded", data);
+        return data;
+    } catch (e) {
+        console.warn("Failed to load cachedResults from localStorage:", e);
+        return null;
+    }
+}
+
+function getCachedResultIndex(id) {
+    return cachedResults.findIndex(entry => entry.id === id);
+}
+
+// if format is false, returns a comma separated string of all the artist names
+function formatArtistNames(artists, format = true) {
+    let n = 3;
+
+    if (format) {
+        return artists.join(', ');
+    }
+    else {
+        if (artists.length <= n) {
+            return artists.join(', ');
+        } else {
+            const firstN = artists.slice(0, n).join(', ');
+            const moreCount = artists.length - n;
+            return `${firstN}, +${moreCount} more`;
+        }
+    }
 }
 
 // functions to dynamically build search suggestions, search results, and recent searches
@@ -298,6 +480,7 @@ function createSuggestions(songs) {
     songs.forEach((song) => {
         const button = document.createElement("button");
         button.classList.add("song-inline")
+        button.id = `${song[3]}`;
         button.onclick = getTitleArtist;
 
         const albCover = document.createElement("img");
@@ -310,17 +493,16 @@ function createSuggestions(songs) {
 
         const artistName = document.createElement("span");
         artistName.id = "artistName"
-        artistName.textContent = song[2];
+        artistName.textContent = formatArtistNames(song[2]);
 
-        button.appendChild(albCover);
-        button.appendChild(songName);
-        button.appendChild(artistName);
+        button.append(albCover, songName, artistName)
         suggestions.appendChild(button);
     });
     suggestions.classList.remove("hide-suggestions");
 }
 
 function createSimilarSongsList(songs, offset = 0) {
+    loader.remove();
     for (let i = 0 + offset; i < songView + offset; i++) {
         setTimeout(() => {
             updateLoadButton();
@@ -346,11 +528,9 @@ function createSimilarSongsList(songs, offset = 0) {
             songName.textContent = track.title;
 
             const artistName = document.createElement("span");
-            artistName.textContent = track.artist;
+            artistName.textContent = formatArtistNames(track.artist);
 
-            songInfo.appendChild(albCover)
-            songInfo.appendChild(songName)
-            songInfo.appendChild(artistName)
+            songInfo.append(albCover, songName, artistName)
 
             // song links
             const songLinks = document.createElement("div")
@@ -416,25 +596,19 @@ function createSimilarSongsList(songs, offset = 0) {
             searchSimilar.classList.add("song-similar");
             searchSimilar.textContent = "Songs like this"
             searchSimilar.onclick = searchSimilarFromResult;
-            searchSimilar.id = `${track.title}%2c${track.artist}%2c${track.albumImage}`
+            searchSimilar.id = `${track.id}`
 
             appleMusic.appendChild(appleMusicImg)
             spotify.appendChild(spotifyImg)
             amazonMusic.appendChild(amazonMusicImg)
 
-            songLinks.appendChild(appleMusic)
-            songLinks.appendChild(spotify)
-            songLinks.appendChild(amazonMusic)
+            songLinks.append(appleMusic, spotify, amazonMusic)
 
             const actions = document.createElement("div")
             actions.classList.add("row")
+            actions.append(songLinks, preview, searchSimilar)
 
-            actions.appendChild(songLinks)
-            actions.appendChild(preview)
-            actions.appendChild(searchSimilar)
-
-            songBlock.appendChild(songInfo)
-            songBlock.appendChild(actions)
+            songBlock.append(songInfo, actions)
 
             similarSongsList.appendChild(songBlock);
         }, 100 * i);
@@ -442,17 +616,17 @@ function createSimilarSongsList(songs, offset = 0) {
 }
 
 // create recent search card
-function createRecentSearch(song, results) {
-    let numCards = document.querySelectorAll(".card").length
-    let recentPlaceholder = document.querySelector(".recent-placeholder")
-    if(recentPlaceholder){
-        recentPlaceholder.remove();
-    }
+async function createRecentSearch(id, results) {
+    let data = await songInfoFromId(id);
+    let songArtist = formatArtistNames((data.results.artists).map((artist) => artist.name))
+    let songTitle = (data.results.name);
+    let albumImage = data.results.album.images[2].url;
+    let song = { title: songTitle, artist: songArtist, albumImage: albumImage, id: id }
 
     // create card
     const card = document.createElement("button");
     card.classList.add("card");
-    card.id = `${numCards}`
+    card.id = `${song.id}`
     card.onclick = searchFromCache
 
     // "songs like" card title
@@ -471,15 +645,14 @@ function createRecentSearch(song, results) {
     title.textContent = song.title;
     artist.textContent = song.artist
 
-    searchSongInfo.appendChild(album)
-    searchSongInfo.appendChild(title)
-    searchSongInfo.appendChild(artist)
+    searchSongInfo.append(album, title, artist)
 
     // top three similar search results
     const top3 = document.createElement("div")
     top3.classList.add("top-3")
 
-    for (let i = 0; i < 3; i++) {
+    let n = 0;
+    for (let i = 0; i < results.length; i++) {
         const result = document.createElement("div")
         let title = document.createElement("p")
         let artist = document.createElement("span")
@@ -491,30 +664,128 @@ function createRecentSearch(song, results) {
         album.width = 50;
         title.textContent = results[i].title;
         title.id = `title${i + 1}`
-        artist.textContent = results[i].artist;
+        artist.textContent = formatArtistNames(results[i].artist);
         artist.id = `artist${i + 1}`
 
-        result.appendChild(album)
-        result.appendChild(title)
-        result.appendChild(artist)
+        result.append(album, title, artist)
         top3.appendChild(result)
+
+        if (i >= 2) {
+            n = results.length - i;
+            break;
+        }
     }
+
+    const nMore = document.createElement("span")
+    nMore.textContent = `+${n} More`
+
+    top3.appendChild(nMore);
 
     // "search again" label on hover
     const searchAgain = document.createElement("span")
     searchAgain.classList.add("label")
-    searchAgain.textContent = "Search Again";
+    searchAgain.textContent = "Resume Search";
 
     // put it together and put in the carousel
-    card.appendChild(cardTitle);
-    card.appendChild(searchSongInfo);
-    card.appendChild(top3);
-    card.appendChild(searchAgain);
+    card.append(cardTitle, searchSongInfo, top3, searchAgain)
 
     cardScroller.insertBefore(card, cardScroller.firstChild)
+    document.querySelector(".recent-inner").classList.remove("hidden")
 
-    if(numCards >= 5){
+    let numCards = document.querySelectorAll(".card").length
+    if (numCards > 6) {
         cardScroller.removeChild(cardScroller.lastChild);
     }
 }
 
+async function createRecentCards(cache) {
+
+    for(let i = 0; i < cache.length; i++){
+        let id = cache[i].id;
+        let results = cache[i].results;
+        
+        let data = await songInfoFromId(id);
+        let songArtist = formatArtistNames((data.results.artists).map((artist) => artist.name))
+        let songTitle = (data.results.name).replace(/\s*\(from [^)]+\)/gi, '').replace(/\*/g, '').trim();;
+        let albumImage = data.results.album.images[2].url;
+        let song = { title: songTitle, artist: songArtist, albumImage: albumImage, id: id }
+
+        // create card
+        const card = document.createElement("button");
+        card.classList.add("card");
+        card.id = `${song.id}`
+        card.onclick = searchFromCache
+
+        // "songs like" card title
+        const cardTitle = document.createElement("p")
+        cardTitle.textContent = "songs like"
+
+        // info about song for recent search
+        const searchSongInfo = document.createElement("div")
+        searchSongInfo.classList.add("song-info")
+
+        let title = document.createElement("p")
+        let artist = document.createElement("span")
+        let album = document.createElement("img");
+        album.src = song.albumImage
+        album.alt = "";
+        title.textContent = song.title;
+        artist.textContent = song.artist
+
+        searchSongInfo.append(album, title, artist)
+
+        // top three similar search results
+        const top3 = document.createElement("div")
+        top3.classList.add("top-3")
+
+        let n = 0;
+        for (let i = 0; i < results.length; i++) {
+            const result = document.createElement("div")
+            let title = document.createElement("p")
+            let artist = document.createElement("span")
+            let album = document.createElement("img");
+            result.classList.add("song-info-small")
+            album.src = results[i].albumImage;
+            album.alt = "";
+            album.id = `title${i + 1}`
+            album.width = 50;
+            title.textContent = results[i].title;
+            title.id = `title${i + 1}`
+            artist.textContent = formatArtistNames(results[i].artist);
+            artist.id = `artist${i + 1}`
+
+            result.append(album, title, artist)
+            top3.appendChild(result)
+
+            if (i >= 2) {
+                n = results.length - i;
+                break;
+            }
+        }
+
+        const nMore = document.createElement("span")
+        nMore.textContent = `+${n} More`
+
+        top3.appendChild(nMore);
+
+        // "search again" label on hover
+        const searchAgain = document.createElement("span")
+        searchAgain.classList.add("label")
+        searchAgain.textContent = "Resume Search";
+
+        // put it together and put in the carousel
+        card.append(cardTitle, searchSongInfo, top3, searchAgain)
+
+        cardScroller.append(card)
+        document.querySelector(".recent-inner").classList.remove("hidden")
+    }
+    
+    const params = new URLSearchParams(window.location.search);
+    const query = params.get('id');
+
+    if (query) {
+        const id = query;
+        updateTitle(id)
+        searchFromCacheOrNew(id)
+    }
+}
