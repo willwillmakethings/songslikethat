@@ -19,6 +19,10 @@ app.get('/', (req, res) => {
   res.render('index.ejs')
 })
 
+app.get('/templates', (req, res) => {
+  res.render('templates.ejs')
+})
+
 app.post('/search', (req, res) => {
   let { searchTerm } = req.body;
   getSuggestions();
@@ -165,7 +169,7 @@ async function findSimilarSongs(id) {
         allTracks.push({
           id: track.id,
           title: track.name,
-          artist: artistNameFromArray(track.artists),
+          artist: artistNameFromArray(track.artists).join(', '),
           albumImage: track.album.images?.[0]?.url || null,
           spotifyUrl: track.external_urls.spotify,
           appleMusicUrl: await getAppleMusicUrl(track.name, name),
@@ -185,7 +189,7 @@ async function findSimilarSongs(id) {
 
 // helper functions
 function artistNameFromArray(array) {
-  return array.map((artist) => (artist.name))
+  return (array.map((artist) => (artist.name)))
 }
 
 async function retryFetchJSON(url, options = {}, maxRetries = 3, delay = 300) {
@@ -251,17 +255,18 @@ function deDuplicate(songsList, maxLength) {
   }
 
   // format for frontend
-  let artistList = [];
   let suggestions = [];
 
   for (let i = 0; i < uniqueTracks.length; i++) {
-    artistList[i] = artistNameFromArray(uniqueTracks[i].artists);
-    suggestions[i] = [
-      uniqueTracks[i].album.images[(uniqueTracks[i].album.images).length - 1].url,
-      uniqueTracks[i].name, 
-      artistList[i],
-      uniqueTracks[i].id
-    ]
+    suggestions[i] = {
+      title: uniqueTracks[i].name,
+      artist: {
+          all: artistNameFromArray(uniqueTracks[i].artists).join(', '),
+          first: uniqueTracks[i].artists[0]
+        },
+      albumImage: uniqueTracks[i].album.images[(uniqueTracks[i].album.images).length - 1].url,
+      id: uniqueTracks[i].id
+    }
   }
 
   return suggestions;
