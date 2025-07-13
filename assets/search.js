@@ -110,16 +110,22 @@ window.addEventListener('popstate', (event) => {
 
 window.addEventListener("DOMContentLoaded", () => {
     const loadedCachedResults = loadCachedResultsFromStorage();
+    const params = new URLSearchParams(window.location.search);
+    const query = params.get('id');
+
     if (loadedCachedResults) {
         cachedResults = loadedCachedResults;
-        createRecentCards(cachedResults);
+
+        // cache, so check if we can load results from cache
+        if (query) {
+            const id = query;
+            updateTitle(id)
+            searchFromCacheOrNew(id)    
+        }
     }
 
     else {
-        // check if the url has search terms in it, and if so, search!
-        const params = new URLSearchParams(window.location.search);
-        const query = params.get('id');
-
+        // no cache, so just search new if there's an id in the url
         if (query) {
             const id = query;
             updateTitle(id)
@@ -378,12 +384,10 @@ async function searchFromCache(cachedEntry) {
     let id;
     window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
     similarSongs.classList.remove("hidden");
-    console.log(this)
 
     /* is this function being called from searchFromCacheOrNew **/
     if (this && this.id !== undefined) {
         index = getCachedResultIndex(this.id)
-        console.log("this.id is undefined")
         id = this.id;
         addToCache(cachedResults[index].id, cachedResults[index].results)
         createSimilarSongsList(cachedResults[index].results);
@@ -391,7 +395,6 @@ async function searchFromCache(cachedEntry) {
     /* or is this function being called from pressing on one of the recent search cards **/
     else {
         id = cachedEntry.id
-        console.log("pressed on a card")
         addToCache(cachedEntry.id, cachedEntry.results)
         createSimilarSongsList(cachedEntry.results);
     }
@@ -409,11 +412,9 @@ async function searchFromCache(cachedEntry) {
 // if no: creates a new search 
 function searchFromCacheOrNew(id) {
     const cachedEntry = cachedResults.find(entry => { return entry.id === id });
-    console.log(cachedEntry);
 
     if (cachedEntry) {
         searchResults = cachedEntry.results;
-        console.log(searchResults)
         searchFromCache(cachedEntry);
     } else {
         searchSimilarSongs(id); // fallback to API search
@@ -428,7 +429,7 @@ function addToCache(id, results) {
     const cacheIndex = getCachedResultIndex(id);
 
     if (cacheIndex !== -1) {
-        const cards = document.querySelectorAll(".card");
+        const cards = document.querySelectorAll(".card"); 
         if (cards[cacheIndex]) cards[cacheIndex].remove();
         cachedResults.splice(cacheIndex, 1);
     }
@@ -603,7 +604,7 @@ function createSimilarSongsList(songs, offset = 0) {
 }
 
 // create recent search card
-async function createRecentSearch(id, results) {
+async function createRecentSearch(id, results, atEnd = false) {
     let song = await songInfoFromId(id);
 
     // create card
@@ -686,31 +687,32 @@ async function createRecentSearch(id, results) {
 
     // put it together and put in the carousel
     card.append(cardTitle, searchSongInfo, top3, searchAgain)
+    
+    if(atEnd){
+        cardScroller.append(card)
+    }
+    else {
+        cardScroller.insertBefore(card, cardScroller.firstChild)
+    }
 
-    cardScroller.insertBefore(card, cardScroller.firstChild)
     document.querySelector(".recent-inner").classList.remove("hidden")
 
     let numCards = document.querySelectorAll(".card").length
     if (numCards > 6) {
         cardScroller.removeChild(cardScroller.lastChild);
     }
+
+    if(document.querySelectorAll(".card").length < cachedResults.length && !atEnd){
+        createRecentCards(cachedResults)
+    }
 }
 
 async function createRecentCards(cache) {
-    for (let i = 0; i < cache.length; i++) {
+    for (let i = 1; i < cache.length; i++) {
         let id = cache[i].id;
         let results = cache[i].results;
 
-        createRecentSearch(id, results)
-    }
-
-    const params = new URLSearchParams(window.location.search);
-    const query = params.get('id');
-
-    if (query) {
-        const id = query;
-        updateTitle(id)
-        searchFromCacheOrNew(id)    
+        await createRecentSearch(id, results, true)
     }
 }
 
