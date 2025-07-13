@@ -38,18 +38,11 @@ const noMore = document.getElementById("noMoreSongs");
 
 const cardScroller = document.querySelector(".card-scroller")
 const scrollWrapper = document.querySelector(".card-scroller-wrapper")
-const scrollRight = document.getElementById("scroll-right")
-const scrollLeft = document.getElementById("scroll-left")
+
+const recentFooter = document.querySelector(".recent-footer");
+const recentHome = document.querySelector(".recent-home")
 
 searchInput.addEventListener("keyup", checkTimeout);
-
-scrollRight.addEventListener("click", () => {
-    scrollWrapper.scrollLeft += 398;
-})
-
-scrollLeft.addEventListener("click", () => {
-    scrollWrapper.scrollLeft -= 398;
-})
 
 toTop.addEventListener("click", () => {
     window.scrollTo({ top: 0, left: 0, behavior: "smooth" })
@@ -121,6 +114,11 @@ window.addEventListener("DOMContentLoaded", () => {
             const id = query;
             updateTitle(id)
             searchFromCacheOrNew(id)    
+        }
+
+        else {
+            recentHome.classList.remove("hidden")
+            createRecentCards(cachedResults, true)
         }
     }
 
@@ -389,12 +387,14 @@ async function searchFromCache(cachedEntry) {
     if (this && this.id !== undefined) {
         index = getCachedResultIndex(this.id)
         id = this.id;
+        searchResults = cachedResults[index].results
         addToCache(cachedResults[index].id, cachedResults[index].results)
         createSimilarSongsList(cachedResults[index].results);
     }
     /* or is this function being called from pressing on one of the recent search cards **/
     else {
         id = cachedEntry.id
+        searchResults = cachedEntry.results
         addToCache(cachedEntry.id, cachedEntry.results)
         createSimilarSongsList(cachedEntry.results);
     }
@@ -425,6 +425,11 @@ function searchFromCacheOrNew(id) {
 // if not, just add them like normal
 function addToCache(id, results) {
     if (!Array.isArray(cachedResults)) cachedResults = [];
+
+    if(recentFooter.childElementCount == 1){
+        recentFooter.append(scrollWrapper)
+        scrollWrapper.append(cardScroller)
+    }
 
     const cacheIndex = getCachedResultIndex(id);
 
@@ -509,6 +514,14 @@ function openLinksButton(button) {
     else {
         button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 512"><path d="M64 360a56 56 0 1 0 0 112 56 56 0 1 0 0-112zm0-160a56 56 0 1 0 0 112 56 56 0 1 0 0-112zM120 96A56 56 0 1 0 8 96a56 56 0 1 0 112 0z"/></svg>'
     }
+}
+
+function scrollBack() {
+    scrollWrapper.scrollLeft -= 398;
+}
+
+function scrollForward() {
+    scrollWrapper.scrollLeft += 398;
 }
 
 // functions to dynamically build search suggestions, search results, and recent searches
@@ -601,6 +614,7 @@ function createSimilarSongsList(songs, offset = 0) {
             similarSongsList.appendChild(songBlock);
         }, 100 * i);
     }
+    updateLoadButton();
 }
 
 // create recent search card
@@ -646,12 +660,9 @@ async function createRecentSearch(id, results, atEnd = false) {
         result.classList.add("song-info-small")
         album.src = results[i].albumImage;
         album.alt = "";
-        album.id = `title${i + 1}`
         album.width = 50;
         title.textContent = results[i].title;
-        title.id = `title${i + 1}`
         artist.textContent = results[i].artist;
-        artist.id = `artist${i + 1}`
 
         let moreLinks = document.createElement("div")
         let openButton = document.createElement("button")
@@ -693,9 +704,8 @@ async function createRecentSearch(id, results, atEnd = false) {
     }
     else {
         cardScroller.insertBefore(card, cardScroller.firstChild)
+        recentFooter.classList.remove("hidden")
     }
-
-    document.querySelector(".recent-inner").classList.remove("hidden")
 
     let numCards = document.querySelectorAll(".card").length
     if (numCards > 6) {
@@ -707,8 +717,12 @@ async function createRecentSearch(id, results, atEnd = false) {
     }
 }
 
-async function createRecentCards(cache) {
-    for (let i = 1; i < cache.length; i++) {
+async function createRecentCards(cache, all = false) {
+    let n = 1;
+    if(all){
+        n = 0
+    }
+    for (let i = n; i < cache.length; i++) {
         let id = cache[i].id;
         let results = cache[i].results;
 
