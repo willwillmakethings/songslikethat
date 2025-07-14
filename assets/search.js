@@ -1,23 +1,14 @@
 const serverURL = "http://localhost:3000"
 let timer = setTimeout(() => { }, 1);
-
 let songView = 10;
 let songSort = "pop-low-high"
 let resultsOffset = 0;
 let searchSuggestions;
 let searchResults;
-
-/* array of [{Song, Results}, ...]
-where:
-1. song is an object with song.artist.all, song.title, and song.albumImage
-representing the song that was searched for
-
-2. results is an array of songs representing the similar songs to Song
-**/
 let cachedResults = [];
 
+// page elements
 let headerCurve = document.getElementById("header-curve");
-
 const searchInput = document.getElementById("search-input");
 const suggestions = document.getElementById("suggestions");
 const similarSongs = document.querySelector(".similar-songs");
@@ -38,9 +29,13 @@ const noMore = document.getElementById("noMoreSongs");
 
 const cardScroller = document.querySelector(".card-scroller")
 const scrollWrapper = document.querySelector(".card-scroller-wrapper")
+const scrollButtons = document.querySelectorAll(".scroll-button")
 
 const recentFooter = document.querySelector(".recent-footer");
 const recentHome = document.querySelector(".recent-home")
+
+const sun = document.querySelector(".sun");
+const moon = document.querySelector(".moon");
 
 searchInput.addEventListener("keyup", checkTimeout);
 
@@ -105,8 +100,12 @@ window.addEventListener("DOMContentLoaded", () => {
     const loadedCachedResults = loadCachedResultsFromStorage();
     const params = new URLSearchParams(window.location.search);
     const query = params.get('id');
+    
+    // load theme
+    const theme = localStorage.getItem('theme') || (window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    changeTheme(theme)
 
-    if (loadedCachedResults) {
+    if (loadedCachedResults.length > 0) {
         cachedResults = loadedCachedResults;
 
         // cache, so check if we can load results from cache
@@ -131,6 +130,8 @@ window.addEventListener("DOMContentLoaded", () => {
         }
     }
 })
+
+window.addEventListener("resize", showOrHideScrollButtons)
 
 // check if the user pauses typing before searching for matching songs
 function checkTimeout() {
@@ -524,6 +525,40 @@ function scrollForward() {
     scrollWrapper.scrollLeft += 398;
 }
 
+function showOrHideScrollButtons(){
+    if(cardScroller.scrollWidth > document.documentElement.clientWidth) {
+        scrollButtons.forEach((button) => button.classList.remove("hidden"))
+    }
+    else{
+        scrollButtons.forEach((button) => button.classList.add("hidden"))
+    }
+}
+
+function changeTheme(theme = "") {
+    if(theme != ""){
+        if(theme == "dark" && !moon.classList.contains("theme-visible")){
+            sun.classList.toggle("theme-visible");
+            moon.classList.toggle("theme-visible");
+        }
+        else if(theme == "light" && !sun.classList.contains("theme-visible")){
+            sun.classList.toggle("theme-visible");
+            moon.classList.toggle("theme-visible");
+        }
+
+        document.querySelector("html").setAttribute("data-theme", theme);
+        localStorage.setItem('theme', theme);
+        return;
+    }
+
+    sun.classList.toggle("theme-visible");
+    moon.classList.toggle("theme-visible");
+
+    let currentThemeSetting = document.querySelector("html").getAttribute("data-theme");
+    let newTheme = currentThemeSetting === "dark" ? "light" : "dark";
+    document.querySelector("html").setAttribute("data-theme", newTheme);
+    localStorage.setItem('theme', newTheme);
+}
+
 // functions to dynamically build search suggestions, search results, and recent searches
 function createSuggestions(songs) {
     songs.forEach((song) => {
@@ -592,11 +627,12 @@ function createSimilarSongsList(songs, offset = 0) {
             const preview = document.createElement("div")
             preview.classList.add("song-playback")
 
-            const playPause = document.createElement("button")
-            playPause.classList.add("play");
+            const play = document.createElement("button")
+            play.classList.add("play");
+            play.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" style="transform: scale(.8) translate(3px, 0px);" viewBox="0 0 384 512"><path fill="var(--main-800)" d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80L0 432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg>'
             // playPause.onclick = playPreview;
 
-            preview.appendChild(playPause)
+            preview.appendChild(play)
 
             // search similar
             const searchSimilar = document.createElement("button")
@@ -715,6 +751,8 @@ async function createRecentSearch(id, results, atEnd = false) {
     if(document.querySelectorAll(".card").length < cachedResults.length && !atEnd){
         createRecentCards(cachedResults)
     }
+
+    showOrHideScrollButtons()
 }
 
 async function createRecentCards(cache, all = false) {
