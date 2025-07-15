@@ -39,6 +39,10 @@ const moon = document.querySelector(".moon");
 
 searchInput.addEventListener("keyup", checkTimeout);
 
+searchInput.addEventListener("blur", () => {
+    suggestions.classList.add("hide-suggestions")
+})
+
 toTop.addEventListener("click", () => {
     window.scrollTo({ top: 0, left: 0, behavior: "smooth" })
 })
@@ -78,7 +82,7 @@ window.addEventListener("resize", () => {
 
 window.addEventListener("scroll", () => {
     const rect = listHeader.getBoundingClientRect();
-    if (rect.top <= 0) {
+    if (rect.top <= 1) {
         toTop.classList.add("to-top-visible")
     }
     else {
@@ -658,7 +662,7 @@ function createSimilarSongsList(songs, offset = 0) {
 
             const play = document.createElement("button")
             play.classList.add("play");
-            play.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" style="transform: scale(.8) translate(3px, 0px);" viewBox="0 0 384 512"><path fill="var(--main-800)" d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80L0 432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg>'
+            play.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" style="transform: scale(.8) translate(3px, 0px);" width="30" viewBox="0 0 384 512"><path fill="var(--main-800)" d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80L0 432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg>'
             // playPause.onclick = playPreview;
 
             preview.appendChild(play)

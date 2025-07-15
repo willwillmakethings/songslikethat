@@ -263,8 +263,9 @@ button {
     interpolate-size: allow-keywords;
 
     position: absolute;
-    transform: translateY(100%);
+    transform: translate(-50%, 100%);
     bottom: 83px;
+    left: 50%;
     z-index: 100;
     width: calc(100% - 3rem);
     max-width: 850px;
@@ -284,7 +285,6 @@ button {
     border: 0 solid var(--accent-200);
     border-top-width: 79px;
     border-radius: var(--border-outer);
-    border-bottom-right-radius: 0;
 
     scrollbar-color: var(--accent-500) var(--accent-200);
 }
@@ -576,7 +576,7 @@ main {
     padding-inline: 1.5rem 1rem;
     background: linear-gradient(to bottom, var(--body-bg) 85%, #0000 100%);
 
-    text-wrap: balance;
+    text-wrap: pretty;
     gap: .5rem;
 }
 
@@ -969,6 +969,7 @@ select:focus,
     width: fit-content;
 
     padding: .75rem 1.5rem;
+    color: var(--main-800);
     outline: 0px solid var(--main-800);
     outline-offset: -5px;
     cursor: pointer;
@@ -1469,6 +1470,7 @@ footer {
         border-top-width: 59px;
         bottom: 63px;
         max-height: 465px;
+        width: calc(100% - 2rem)
     }
 
     .song-inline{
