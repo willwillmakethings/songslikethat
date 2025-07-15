@@ -41,9 +41,6 @@ searchInput.addEventListener("keyup", checkTimeout);
 
 toTop.addEventListener("click", () => {
     window.scrollTo({ top: 0, left: 0, behavior: "smooth" })
-    toTop.classList.add("to-top-visible");
-    toTop.classList.remove("to-top-focus")
-    toTop.blur();
 })
 
 toTop.addEventListener("focus", () => {
@@ -60,6 +57,10 @@ sortButton.addEventListener("focus", () => {
     suggestions.classList.add("hide-suggestions")
     removeSuggestions();
 })
+
+sortButton.addEventListener("blur", () => {
+    sortButton.classList.remove("sort-visible")
+});
 
 // click outside search box or results box to close results
 window.addEventListener("click", (e) => {
@@ -509,20 +510,31 @@ function formatArtistNames(artists, format = true, n = 3) {
 
 function openLinksButton(button) {
     (button.parentNode).classList.toggle("open")
+    let links = button.parentNode;
     if ((button.parentNode).classList.contains("open")) {
         button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><path d="M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z"/></svg>'
+        links.childNodes.forEach((element) => {
+            if(element.tagName == "A"){
+                element.tabIndex = 0;
+            }
+        })
     }
     else {
         button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 512"><path d="M64 360a56 56 0 1 0 0 112 56 56 0 1 0 0-112zm0-160a56 56 0 1 0 0 112 56 56 0 1 0 0-112zM120 96A56 56 0 1 0 8 96a56 56 0 1 0 112 0z"/></svg>'
+        links.childNodes.forEach((element) => {
+        if(element.tagName == "A"){
+                element.tabIndex = -1;
+            }
+        })
     }
 }
 
 function scrollBack() {
-    scrollWrapper.scrollLeft -= 398;
+    scrollWrapper.scrollLeft -= 250;
 }
 
 function scrollForward() {
-    scrollWrapper.scrollLeft += 398;
+    scrollWrapper.scrollLeft += 250;
 }
 
 function showOrHideScrollButtons(){
@@ -534,15 +546,26 @@ function showOrHideScrollButtons(){
     }
 }
 
+function showSettings() {
+    if(sortButton.classList.contains("sort-visible")){
+        sortButton.classList.remove("sort-visible")
+    }
+    else {
+        sortButton.classList.add("sort-visible")
+    }
+}
+
 function changeTheme(theme = "") {
     if(theme != ""){
         if(theme == "dark" && !moon.classList.contains("theme-visible")){
             sun.classList.toggle("theme-visible");
             moon.classList.toggle("theme-visible");
+            document.querySelector('meta[name="theme-color"]').setAttribute('content', "#1c486e");
         }
         else if(theme == "light" && !sun.classList.contains("theme-visible")){
             sun.classList.toggle("theme-visible");
             moon.classList.toggle("theme-visible");
+            document.querySelector('meta[name="theme-color"]').setAttribute('content', "#B6DEFF");
         }
 
         document.querySelector("html").setAttribute("data-theme", theme);
@@ -556,6 +579,12 @@ function changeTheme(theme = "") {
     let currentThemeSetting = document.querySelector("html").getAttribute("data-theme");
     let newTheme = currentThemeSetting === "dark" ? "light" : "dark";
     document.querySelector("html").setAttribute("data-theme", newTheme);
+    if(newTheme == "dark"){
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', "#1c486e");
+    }
+    else{
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', "#B6DEFF");
+    }
     localStorage.setItem('theme', newTheme);
 }
 
@@ -711,6 +740,10 @@ async function createRecentSearch(id, results, atEnd = false) {
         openButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 512"><path d="M64 360a56 56 0 1 0 0 112 56 56 0 1 0 0-112zm0-160a56 56 0 1 0 0 112 56 56 0 1 0 0-112zM120 96A56 56 0 1 0 8 96a56 56 0 1 0 112 0z"/></svg>'
 
         const links = createLinkImages(results[i]);
+        links.appleMusic.tabIndex = -1;
+        links.spotify.tabIndex = -1;
+        links.amazonMusic.tabIndex = -1;
+        
         moreLinks.append(openButton, links.appleMusic, links.spotify, links.amazonMusic)
 
         result.append(album, title, artist, moreLinks)

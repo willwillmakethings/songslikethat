@@ -5,7 +5,6 @@
     transition: color .2s ease, 
                 background-color .2s ease,
                 fill .2s ease;
-    scrollbar-color: initial var(--body-bg);
 }
 
 /* default styling */
@@ -78,6 +77,18 @@ body {
     /* padding + border */
     --border-outer: 1.25rem;
     --border-inner: .8rem;
+}
+
+@media screen and (max-width: 600px){
+    body {
+        --fs-800: 36pt;
+        --fs-700: 32pt;
+        --fs-650: 26pt;
+        --fs-600: 20pt;
+        --fs-500: 19pt;
+        --fs-400: 14pt;
+        --fs-300: 10pt;
+    }
 }
 
 h1 {
@@ -423,6 +434,7 @@ main {
         fill: var(--main-100);
         rotate: 180deg;
         transform: translateY(1px);
+        position: absolute;
     }
 }
 
@@ -464,24 +476,11 @@ main {
     }
 }
 
-.recent-home {
-    text-align: center;
-    display: grid;
-    gap: 1rem;
+.recent-home-header{
     position: relative;
-    max-width: 1250px;
-
-    .card {
-        border: 2px solid var(--accent-100);
-        box-shadow: 0 1rem 1rem hsla(0 0 0 / .1)
-    }
-
-    .card-scroller-wrapper{
-        padding-bottom: 4.5rem !important;
-        mask: linear-gradient(to right, #0000 1%, #000 2%, #000 98%, #0000 99%)
-    }
 
     .scroll-button{
+        top: 0;
         background: var(--main-200)
     }
 
@@ -493,6 +492,46 @@ main {
     #scroll-right{
         right: 2rem;
     }
+}
+
+.recent-home {
+    text-align: center;
+    display: grid;
+    gap: 1rem;
+    max-width: 1250px;
+
+    .card {
+        border: 2px solid var(--accent-100);
+        box-shadow: 0 1rem 1rem hsla(0 0 0 / .1)
+    }
+
+    .card-scroller-wrapper{
+        padding-bottom: 4.5rem !important;
+        mask: linear-gradient(to right, #0000 1.5%, #000 2%, #000 98%, #0000 98.5%);
+    }
+}
+
+@media screen and (max-width: 1250px){
+    .recent-home {
+        max-width: 850px;
+
+        > .card-scroller-wrapper {
+            mask: linear-gradient(to right, #0000 1.5%, #000 2%, #000 98%, #0000 98.5%);
+        }
+
+        .card{
+            scroll-margin: 1.5rem;
+        }
+
+        #scroll-left{
+            left: 1.5rem;
+            right: unset;
+        }
+
+        #scroll-right{
+            right: 1.5rem;
+        }
+    }   
 }
 
 .home-scroller-wrapper{
@@ -536,7 +575,6 @@ main {
     padding-block: .5rem 1rem;
     padding-inline: 1.5rem 1rem;
     background: linear-gradient(to bottom, var(--body-bg) 85%, #0000 100%);
-    /* mask: linear-gradient(to bottom, #000 85%, #0000 100%); */
 
     text-wrap: balance;
     gap: .5rem;
@@ -578,7 +616,8 @@ main {
 
     transition: outline-width .2s ease,
         outline-offset .2s ease,
-        width .2s ease;
+        width .2s ease,
+        height .2s ease;
 
     position: relative;
     interpolate-size: allow-keywords;
@@ -601,6 +640,10 @@ main {
         font-weight: var(--fw-medium);
         color: var(--main-800);
     }
+
+    >svg {
+        width: 25px
+    }
 }
 
 .sort-popup {
@@ -614,8 +657,14 @@ main {
     cursor: auto;
 
     display: none;
+    /* height: 0; */
 
-    padding: .5rem;
+    /* transition: padding 0s ease,
+                height .2s ease;
+    interpolate-size: allow-keywords;
+    overflow: hidden; */
+
+        padding: .5rem;
     padding-top: 0;
     background-color: var(--main-300);
     border-radius: 0 0 var(--border-outer) var(--border-outer);
@@ -668,8 +717,7 @@ select:focus,
     width: max-content;
 }
 
-.sort-toggle:focus,
-.sort-toggle:focus-within {
+.sort-visible {
     width: max-content;
     outline-width: 3px;
     outline-offset: -8px;
@@ -679,6 +727,8 @@ select:focus,
         display: grid;
         justify-items: center;
         gap: .2rem;
+        padding: .5rem;
+        padding-top: 0;
     }
 
     &::after {
@@ -691,10 +741,19 @@ select:focus,
     }
 }
 
+.sort-toggle:focus,
+.sort-toggle:focus-within {
+    width: max-content;
+    outline-width: 3px;
+    outline-offset: -8px;
+}
+
 .to-top {
     interpolate-size: allow-keywords;
     transition: outline .2s ease,
-                outline-offset .2s ease;
+                outline-offset .2s ease,
+                width .2s ease,
+                margin .2s ease;
     width: 0;
     padding-inline: 0;
 
@@ -711,8 +770,9 @@ select:focus,
     align-items: center;
     cursor: pointer;
 
-    >img {
-        display: none;
+    >svg {
+        width: 20px;
+        /* display: none; */
     }
 }
 
@@ -720,20 +780,19 @@ select:focus,
 .to-top-focus {
     outline: 3px solid var(--main-800);
     outline-offset: -8px;
+
 }
 
 .to-top:active {
     background-color: var(--main-800);
     fill: var(--text-100);
-
 }
 
 .to-top-visible {
     width: auto;
     padding-inline: 1rem;
-    margin-right: .2rem;
 
-    >img {
+    >svg {
         display: block;
     }
 }
@@ -1059,35 +1118,16 @@ footer {
     }
 }
 
-@media screen and (max-width: 600px) {
-    .recent-header{
-        display: flex;
-        justify-content: center;
-        margin-inline: 1rem;
-    }
-
-    .scroll-button{
-        width: 40px;
-        height: 40px;
-        bottom: 0;
-
-        svg {
-            width: 17.5px;
-        }
-    }
-
-    #scroll-left{
-        right: unset;
-        left: 0;
-    }
-}
-
 .card-scroller-wrapper {
     height: 475px;
     padding-bottom: 3rem;
     overflow-y: hidden;
     scrollbar-width: none;
+    scroll-snap-type: x mandatory;
     scroll-behavior: smooth;
+    scrollbar-width: none;
+
+    mask: linear-gradient(to right, #0000 1%, #000 2%, #000 98%, #0000 99%);
 }
 
 .card-scroller{
@@ -1114,6 +1154,8 @@ footer {
     align-items: center;
     width: 350px;
     gap: 1rem;
+    scroll-margin: 2rem;
+    scroll-snap-align: start;
     
     transition: all .2s ease;
     animation: fade-in 500ms forwards;
@@ -1330,6 +1372,11 @@ footer {
 
     padding: 1rem;
     overflow: hidden;
+
+    svg{
+        width: 45px;
+        height: 45px;
+    }
 }
 
 .sun {
@@ -1350,4 +1397,166 @@ footer {
 
 .theme-visible {
     rotate: 0deg !important
+}
+
+@media screen and (max-width: 750px) {
+    .header-inner{
+        padding-top: .25rem;
+        padding-inline: 1rem;
+
+        > a {
+            padding-inline: 1.5rem;
+        }
+
+        > a:focus {
+            outline-width: 3px;
+            outline-offset: -7px;
+        }
+    }
+
+    .welcome {
+        margin-top: 3rem;
+    }
+
+    .recent-home-header {
+        .scroll-button{
+            top: 25%;
+        }
+
+        h2{
+            text-wrap: pretty;
+            margin-inline: auto;
+            width: 60%;
+        }
+    }
+
+    .recent-header{
+        display: flex;
+        justify-content: center;
+        margin-inline: 1rem;
+    }
+
+    .scroll-button{
+        width: 40px;
+        height: 40px;
+        bottom: 0;
+
+        svg {
+            width: 17.5px;
+        }
+    }
+
+    #scroll-left{
+        right: unset;
+        left: 0;
+    }
+
+        #search-input{
+        padding-block: .5rem;
+    }
+
+    #search-input:focus{
+        outline-offset: -3px;
+        outline-width: 3px;
+    }
+
+    .loader svg {
+            fill: var(--main-800);
+            max-width: 300px;
+        }
+
+    .songs-suggestions{
+        border-top-width: 59px;
+        bottom: 63px;
+        max-height: 465px;
+    }
+
+    .song-inline{
+        padding: .5rem
+    }
+
+    .list-header{
+        flex-wrap: wrap;
+        text-align: center;
+        justify-content: center;
+        padding-top: .75rem;
+        padding-bottom: 1.5rem;
+    }
+
+    .sort-toggle{
+        width: unset;
+
+        >svg {
+            width: 22.5px
+        }
+    }
+
+    .to-top > svg{
+        width: 18px;
+    }
+
+    .card-scroller-wrapper {
+        height: 425px
+    }
+
+    .card{
+        max-width: 300px;
+        gap: .5rem;
+    }
+
+    .song-block {
+        padding-bottom: .5rem;
+
+        .row {
+            flex-wrap: wrap;
+        }
+    }
+
+    .song-similar{
+        flex: 0 0 100%;
+        justify-content: center;
+        text-align: center;
+        box-sizing: border-box;
+        padding-block: 1rem;
+        background-color: transparent;
+        outline-offset: 0;
+    }
+
+    .song-similar:hover,
+    .song-similar:focus{
+        outline-offset: 0;
+    }
+
+    .logo-button{
+        h1{
+            font-size: var(--fs-650)
+        }
+        svg{
+            width: 50px;
+        }
+    }
+
+    #theme-toggle {
+        width: 65px;
+        height: 65px;
+
+        svg{
+            width: 30px;
+            height: 30px;
+        }
+    }
+}
+
+@media screen and (max-width: 400px){
+    .header-inner > a {
+        padding-inline: 1rem;
+    }
+
+    .logo-button h1{
+        display: none;
+    }
+    
+    .card {
+        max-width: 275px;
+    }
 }
