@@ -1,4 +1,4 @@
-const serverURL = "http://localhost:3000"
+const serverURL = "http://192.168.1.173:3000"
 let timer = setTimeout(() => { }, 1);
 let songView = 10;
 let songSort = "pop-low-high"
@@ -39,9 +39,10 @@ const moon = document.querySelector(".moon");
 
 searchInput.addEventListener("keyup", checkTimeout);
 
-searchInput.addEventListener("blur", () => {
-    suggestions.classList.add("hide-suggestions")
-})
+// searchInput.addEventListener("blur", () => {
+//     suggestions.classList.add("hide-suggestions")
+//     removeSuggestions();
+// })
 
 toTop.addEventListener("click", () => {
     window.scrollTo({ top: 0, left: 0, behavior: "smooth" })
@@ -67,14 +68,8 @@ sortButton.addEventListener("blur", () => {
 });
 
 // click outside search box or results box to close results
-window.addEventListener("click", (e) => {
-    if (e.target != suggestions && e.target != searchInput && !suggestions.contains(e.target)) {
-        removeSuggestions();
-    }
-    else if (e.target == searchInput && (searchInput.value != "")) {
-        createSuggestions(searchSuggestions);
-    }
-})
+window.addEventListener("click", closeSuggestionsOnTap);
+window.addEventListener("touchstart", closeSuggestionsOnTap);
 
 window.addEventListener("resize", () => {
     listHeader.style.marginTop = headerCurve.clientHeight + "px";
@@ -539,6 +534,18 @@ function scrollBack() {
 
 function scrollForward() {
     scrollWrapper.scrollLeft += 250;
+}
+
+function closeSuggestionsOnTap(e){
+    if (e.target != suggestions && e.target != searchInput && !suggestions.contains(e.target)) {
+        suggestions.classList.add("hide-suggestions")
+        removeSuggestions();
+        searchInput.blur();
+    }
+    else if (e.target == searchInput && (searchInput.value != "")) {
+        createSuggestions(searchSuggestions);
+        searchInput.focus();
+    }
 }
 
 function showOrHideScrollButtons(){
