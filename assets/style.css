@@ -936,7 +936,9 @@ select:focus,
 .play {
     display: flex;
     align-items: center;
+    justify-content: center;
     position: relative;
+    gap: 1rem;
 
     border-radius: 100em;
     background: transparent;
@@ -949,8 +951,39 @@ select:focus,
                 outline-offset .2s ease;
 
     padding: .5rem;
-    height: 45px;
-    width: 45px;
+    height: 48px;
+    width: 100%;
+
+    p {
+        font-size: var(--fs-500)
+    }
+}
+
+@media screen and (min-width: 551px){
+    .playPreviewText{
+        display: block;
+    }
+    .playText{
+        display: none;
+    }
+}
+
+@media screen and (max-width: 550px) and (min-width: 401px){
+    .playPreviewText{
+        display: none;
+    }
+    .playText{
+        display: block;
+    }
+}
+
+@media screen and (max-width: 400px){
+    .playPreviewText{
+        display: none;
+    }
+    .playText{
+        display: none;
+    }
 }
 
 .play:focus,
@@ -1560,5 +1593,18 @@ footer {
     
     .card {
         max-width: 275px;
+    }
+
+    .list,
+    .list-header{
+        padding-inline: 1rem;
+    }
+    
+    .recent-header{
+        margin-inline: .5rem;
+    }
+
+    .card-scroller {
+        padding-inline: 1rem;
     }
 }

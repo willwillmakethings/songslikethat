@@ -6,6 +6,8 @@ let resultsOffset = 0;
 let searchSuggestions;
 let searchResults;
 let cachedResults = [];
+let currentAudio = null;
+let currentButton = null;
 
 // page elements
 let headerCurve = document.getElementById("header-curve");
@@ -234,6 +236,7 @@ async function searchSimilarSongs(id) {
     createBreadcrumb(id);
     updateURL(id);
     resultsOffset = 0;
+    let start = Date.now();
 
     const res = await fetch(`${serverURL}/searchSimilar/${encodeURIComponent(id)}`, {
         method: "POST",
@@ -244,6 +247,7 @@ async function searchSimilarSongs(id) {
 
     const results = (await res.json());
     if (results.status == "success") {
+        console.log("search took ", ((Date.now() - start) / 1000), " seconds")
         searchResults = results.results
 
         // cache results and search title/artist/albumImage
@@ -389,15 +393,15 @@ async function searchFromCache(cachedEntry) {
         index = getCachedResultIndex(this.id)
         id = this.id;
         searchResults = cachedResults[index].results
-        addToCache(cachedResults[index].id, cachedResults[index].results)
         createSimilarSongsList(cachedResults[index].results);
+        addToCache(cachedResults[index].id, cachedResults[index].results)
     }
     /* or is this function being called from pressing on one of the recent search cards **/
     else {
         id = cachedEntry.id
         searchResults = cachedEntry.results
-        addToCache(cachedEntry.id, cachedEntry.results)
         createSimilarSongsList(cachedEntry.results);
+        addToCache(cachedEntry.id, cachedEntry.results)
     }
 
     updateURL(id)
@@ -505,6 +509,48 @@ function formatArtistNames(artists, format = true, n = 3) {
             return firstN
         }
     }
+}
+
+function togglePause(button) {
+    button.classList.toggle("pause")
+    if(button.classList.contains("pause")){
+        button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512" style="transform: scale(.8) translate(3px, 0px)" width="30"><path fill="var(--main-800)" d="M48 64C21.5 64 0 85.5 0 112L0 400c0 26.5 21.5 48 48 48l32 0c26.5 0 48-21.5 48-48l0-288c0-26.5-21.5-48-48-48L48 64zm192 0c-26.5 0-48 21.5-48 48l0 288c0 26.5 21.5 48 48 48l32 0c26.5 0 48-21.5 48-48l0-288c0-26.5-21.5-48-48-48l-32 0z"/></svg> <p class="playText">Stop</p> <p class="playPreviewText">Stop Preview</p>'
+    }
+    else{
+        button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" style="transform: scale(.8) translate(3px, 0px);" width="30" viewBox="0 0 384 512"><path fill="var(--main-800)" d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80L0 432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg> <p class="playText">Play</p> <p class="playPreviewText">Play Preview</p>'
+    }
+}
+
+function playPreview(previewUrl, button) {
+    // If there's already something playing
+    if (currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+
+        if (button === currentButton) {
+            // If the same button was clicked, just stop
+            currentAudio = null;
+            currentButton = null;
+            togglePause(button); // optional styling
+            return;
+        }
+
+        // Remove playing state from old button
+        if (currentButton) togglePause(currentButton);
+    }
+
+    // Create a new Audio object and play
+    currentAudio = new Audio(previewUrl);
+    currentAudio.play();
+    currentButton = button;
+    togglePause(button);
+
+    // Remove "playing" style when finished
+    currentAudio.onended = () => {
+        togglePause(button);
+        currentAudio = null;
+        currentButton = null;
+    };
 }
 
 function openLinksButton(button) {
@@ -669,9 +715,17 @@ function createSimilarSongsList(songs, offset = 0) {
 
             const play = document.createElement("button")
             play.classList.add("play");
-            play.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" style="transform: scale(.8) translate(3px, 0px);" width="30" viewBox="0 0 384 512"><path fill="var(--main-800)" d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80L0 432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg>'
-            // playPause.onclick = playPreview;
-
+            if(track.previewUrl != null){
+                play.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" style="transform: scale(.8) translate(3px, 0px);" width="30" viewBox="0 0 384 512"><path fill="var(--main-800)" d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80L0 432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg> <p class="playText">Play</p> <p class="playPreviewText">Play Preview</p>'
+                play.addEventListener("click", () => {
+                    playPreview(track.previewUrl, play);
+                });
+            }
+            else{
+                play.innerHTML = '<p id="playText">Preview Unavailable</p>'
+                play.style.pointerEvents = "none"
+                play.style.fontStyle = "italic"
+            }
             preview.appendChild(play)
 
             // search similar
