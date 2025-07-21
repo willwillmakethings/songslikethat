@@ -60,7 +60,6 @@ app.post('/getSongInfo/:id', (req, res) => {
 // takes in spotify id, returns song object
 async function songFromId(id){
   let token = await getToken();
-
   const IdRes = await fetch(`https://api.spotify.com/v1/tracks/${id}?market=us`, {
     method: "GET",
     headers: {
@@ -76,11 +75,11 @@ async function songFromId(id){
   return track;
 }
 
-async function fetchSpotifyApi(title, id = "") {
+async function fetchSpotifyApi(title, artist = "") {
   let token = await getToken();
   let query;
 
-  if (id != "") {
+  if (artist != "") {
     // get the actual song after we've searched for it with title + artist
     query = new URLSearchParams({
       q: title, artist,
@@ -116,75 +115,51 @@ async function fetchSpotifyApi(title, id = "") {
   return songsList;
 }
 
-async function getRelatedArtists(artistName) {
-  const TASTEDIVE_API_KEY = process.env.TASTEDIVE_API_KEY
-  const query = encodeURIComponent(artistName);
-
-  const res = await fetch(
-    `https://tastedive.com/api/similar?q=${query}&type=music&info=0&limit=10&k=${TASTEDIVE_API_KEY}`
-  );
-
-  if (!res.ok) {
-    console.error("TasteDive API error:", await res.text());
-    return [];
-  }
-
-  const json = await res.json();
-  const results = json?.similar?.results || [];
-
-  // Extract just the artist names
-  const artistNames = results.map(entry => entry.name);
-  return artistNames;
-}
-
 async function findSimilarSongs(id) {
   let token = await getToken();
+  let searchedSong = await songFromId(id)
+  let title = searchedSong.name;
+  let artist = searchedSong.artists[0].name;
 
-  let title = (await songFromId(id)).name;
-  let artist = (await songFromId(id)).artists[0].name;
+  // get similar songs with lastfm
+  const LASTFM_API_KEY = process.env.LASTFM_API_KEY;
 
-  const headers = { Authorization: `Bearer ${token}` };
+  let query = new URLSearchParams({
+    method: "track.getsimilar",
+    track: title,
+    artist: artist,
+    api_key: LASTFM_API_KEY,
+    format: "json",
+    limit: 25
+  }).toString();
 
-  const relatedArtistNames = await getRelatedArtists(artist);
-  const allTracks = [];
+  let similarRes = await fetch(`https://ws.audioscrobbler.com/2.0/?${query}`);
+  let similarResults = (await similarRes.json()).similartracks.track;
 
-  for (const name of relatedArtistNames) {
-    try {
-      await new Promise(resolve => setTimeout(resolve, 100));
+  if(similarResults.length == 0){
+    query = new URLSearchParams({
+      method: "artist.getsimilar",
+      artist: artist,
+      api_key: LASTFM_API_KEY,
+      format: "json",
+      limit: 25,
+    }).toString();
 
-      // 1. Search for artist
-      const artistSearchUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(name)}&type=artist&limit=1`;
-      const artistData = await retryFetchJSON(artistSearchUrl, { headers });
+    similarRes = await fetch(`https://ws.audioscrobbler.com/2.0/?${query}`);
+    similarResults = (await similarRes.json()).similarartists.artist;
+    console.log("similar artists found: ")
 
-      const artistId = artistData?.artists?.items?.[0]?.id;
-      if (!artistId) continue;
-
-      // 2. Get top tracks
-      const topTracksUrl = `https://api.spotify.com/v1/artists/${artistId}/top-tracks?market=US`;
-      const topTrackData = await retryFetchJSON(topTracksUrl, { headers });
-      const topTracks = topTrackData.tracks || [];
-
-      // 3. Format and push
-      for (const track of topTracks.slice(0, 5)) {
-        allTracks.push({
-          id: track.id,
-          title: track.name,
-          artist: artistNameFromArray(track.artists).join(', '),
-          albumImage: track.album.images?.[0]?.url || null,
-          spotifyUrl: track.external_urls.spotify,
-          appleMusicUrl: await getAppleMusicUrl(track.name, name),
-          amazonMusicUrl: `https://www.amazon.com/s?k=${encodeURIComponent(track.name + ' ' + name)}&i=digital-music`,
-          previewUrl: track.preview_url,
-          popularity: track.popularity,
-          release_date: track.album.release_date
-        });
-      }
-    } catch (err) {
-      console.warn(`Error fetching for "${name}":`, err.message);
-    }
+    // we dont have 50 songs, so we have to handle building the list of similar songs differently
+    let similarSongs = await getSimilarFromArtists(similarResults, token);
+    return similarSongs;
   }
 
-  return allTracks;
+  console.log("similar songs found: ")
+
+  // get info for each song (no need to get top songs from artists)
+  let similarSongs = await getSongsOnSpotify(similarResults)
+  similarSongs = parseSimilarSongInfo(similarSongs);
+  return similarSongs;
 }
 
 // helper functions
@@ -192,31 +167,88 @@ function artistNameFromArray(array) {
   return (array.map((artist) => (artist.name)))
 }
 
-async function retryFetchJSON(url, options = {}, maxRetries = 3, delay = 300) {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const res = await fetch(url, options);
+// return an array of the top two songs from an array of artists
+async function getSimilarFromArtists(similarArtists, token) {
+  let songs = [];
+  const headers = { Authorization: `Bearer ${token}` };
 
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status} ${res.statusText}`);
-      }
+  for(let i = 0; i < similarArtists.length; i++){
+    let artist = similarArtists[i].name;
 
-      return await res.json();
-    } catch (err) {
-      if (attempt === maxRetries) {
-        throw new Error(`Failed after ${maxRetries} attempts: ${err.message}`);
-      }
-      console.warn(`Retrying (${attempt}/${maxRetries})... ${url}`);
-      await new Promise(resolve => setTimeout(resolve, delay * attempt)); // exponential backoff
+    const artistSearchUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(artist)}&type=artist&limit=1`;
+    const artistData = await fetch(artistSearchUrl, { headers });
+    let res = await artistData.json();
+
+    const artistId = res?.artists?.items?.[0]?.id;
+
+    const topTracksUrl = `https://api.spotify.com/v1/artists/${artistId}/top-tracks?market=US`;
+    const topTrackData = await fetch(topTracksUrl, { headers });
+    res = await topTrackData.json();
+
+    const topTracks = res.tracks;
+    for(const track of topTracks.slice(0, 1)){
+      songs.push(track)
     }
   }
+
+  // parse info from spotify
+  const similarSongs = parseSimilarSongInfo(songs)
+  return similarSongs
+}
+
+// parse the info from lastfm
+async function parseSimilarSongInfo(similarSongs) {
+  let songs = [];
+  for(const track of similarSongs){
+    let artist = artistNameFromArray(track.artists).slice(0, 1).join(', ');
+    songs.push({
+      id: track.id,
+      title: track.name,
+      artist: artist,
+      albumImage: track.album.images?.[0]?.url || null,
+      spotifyUrl: track.external_urls.spotify,
+      appleMusicUrl: await getAppleMusicUrl(track.name, artist),
+      amazonMusicUrl: `https://www.amazon.com/s?k=${encodeURIComponent(track.name + ' ' + artist)}&i=digital-music`,
+      previewUrl: await getDeezerPreview(track.name, artist),
+      popularity: track.popularity,
+      release_date: track.album.release_date
+    })
+  }
+  return songs;
+}
+
+async function getDeezerPreview(title, artist) {
+  let query = new URLSearchParams({
+    index: '0',
+    limit: '1',
+    output: 'json'
+  }).toString();
+
+  const songsRes = await fetch(`https://api.deezer.com/search/track?q=artist:"${artist}" track"${title}"&${query}`, {
+    method: "GET",
+    headers: {
+      "Accept": "application/json"
+    },
+  });
+  
+  let deezerResult = await songsRes.json();
+  if(!deezerResult.data.length == 0) { return deezerResult.data[0].preview }
+  else { return null }
+}
+
+async function getSongsOnSpotify(songs){
+  let spotifySongs = [];
+  for(song of songs){
+    let spotify = (await fetchSpotifyApi(song.name, song.artist.name)).tracks.items[0]
+    spotifySongs.push(spotify)
+  }
+  return spotifySongs
 }
 
 async function getToken() {
   const CLIENT_SECRET = process.env.CLIENT_SECRET;
   const CLIENT_ID = process.env.CLIENT_ID;
 
-  // get access token
   const tokenRes = await fetch("https://accounts.spotify.com/api/token", {
     method: "POST",
     headers: {
@@ -232,6 +264,9 @@ async function getToken() {
 
 async function getAppleMusicUrl(title, artist) {
   const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(title + ' ' + artist)}&entity=song&limit=1`);
+  if(!res.ok){
+    return null
+  }
   const data = await res.json();
   return data.results?.[0]?.trackViewUrl || null;
 }
