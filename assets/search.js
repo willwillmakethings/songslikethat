@@ -41,11 +41,6 @@ const moon = document.querySelector(".moon");
 
 searchInput.addEventListener("keyup", checkTimeout);
 
-// searchInput.addEventListener("blur", () => {
-//     suggestions.classList.add("hide-suggestions")
-//     removeSuggestions();
-// })
-
 toTop.addEventListener("click", () => {
     window.scrollTo({ top: 0, left: 0, behavior: "smooth" })
 })
